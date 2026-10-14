@@ -1,0 +1,168 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1540 1270" width="1540" height="1270" role="img" aria-label="Chen-notation ER diagram. USER has zero or one STUDENT and zero or one COMPANY (1:1). COMPANY posts JOB POSTINGs (1:N). STUDENT and JOB POSTING are linked M:N through the associative entity APPLICATION.">
+<style>
+.bg{fill:#ffffff}
+.ln{stroke:#8a96a8;stroke-width:1.1}
+.rl{fill:none;stroke:#17202d;stroke-width:1.6}
+.tot-o{fill:none;stroke:#17202d;stroke-width:5.5}
+.tot-i{fill:none;stroke:#ffffff;stroke-width:2}
+.ov{fill:#ffffff;stroke:#3c4a5e;stroke-width:1.3}
+.kov{stroke:#2450c8;stroke-width:1.6}
+.at{font:400 12px Consolas,'JetBrains Mono',monospace;fill:#17202d}
+.key{fill:#2450c8;font-weight:700;text-decoration:underline}
+.dia{fill:#fdf3e6;stroke:#a85a07;stroke-width:1.6}
+.dia.in{fill:#fdf3e6}
+.rt{font:700 12.5px 'Segoe UI',system-ui,sans-serif;letter-spacing:.06em;fill:#7a4105}
+.en{fill:#e7edf8;stroke:#17202d;stroke-width:1.8}
+.et{font:700 14px 'Segoe UI',system-ui,sans-serif;letter-spacing:.06em;fill:#17202d}
+.et.sm{font-size:12px}
+.tbl{font:400 10.5px Consolas,monospace;fill:#5d6a7c}
+.card{font:700 14px 'Segoe UI',system-ui,sans-serif;fill:#a85a07}</style>
+<rect class="bg" width="1540" height="1270"/>
+<line class="ln" x1="750" y1="150" x2="535.0" y2="150.0"/>
+<line class="ln" x1="750" y1="150" x2="598.0" y2="75.8"/>
+<line class="ln" x1="750" y1="150" x2="750.0" y2="45.0"/>
+<line class="ln" x1="750" y1="150" x2="902.0" y2="75.8"/>
+<line class="ln" x1="750" y1="150" x2="965.0" y2="150.0"/>
+<line class="ln" x1="380" y1="560" x2="361.3" y2="385.7"/>
+<line class="ln" x1="380" y1="560" x2="263.1" y2="355.7"/>
+<line class="ln" x1="380" y1="560" x2="232.2" y2="432.9"/>
+<line class="ln" x1="380" y1="560" x2="126.8" y2="457.1"/>
+<line class="ln" x1="380" y1="560" x2="167.2" y2="535.3"/>
+<line class="ln" x1="380" y1="560" x2="100.3" y2="603.2"/>
+<line class="ln" x1="380" y1="560" x2="194.4" y2="648.4"/>
+<line class="ln" x1="380" y1="560" x2="195.1" y2="730.5"/>
+<line class="ln" x1="380" y1="560" x2="302.2" y2="723.1"/>
+<line class="ln" x1="380" y1="560" x2="370.1" y2="783.9"/>
+<line class="ln" x1="1120" y1="560" x2="1112.3" y2="390.1"/>
+<line class="ln" x1="1120" y1="560" x2="1230.2" y2="363.6"/>
+<line class="ln" x1="1120" y1="560" x2="1283.5" y2="446.2"/>
+<line class="ln" x1="1120" y1="560" x2="1389.7" y2="497.6"/>
+<line class="ln" x1="1120" y1="560" x2="1337.9" y2="583.7"/>
+<line class="ln" x1="1120" y1="560" x2="1356.5" y2="676.2"/>
+<line class="ln" x1="1120" y1="560" x2="1236.6" y2="704.2"/>
+<line class="ln" x1="1120" y1="1000" x2="1262.8" y2="859.7"/>
+<line class="ln" x1="1120" y1="1000" x2="1391.9" y2="862.9"/>
+<line class="ln" x1="1120" y1="1000" x2="1343.0" y2="950.9"/>
+<line class="ln" x1="1120" y1="1000" x2="1447.8" y2="1008.6"/>
+<line class="ln" x1="1120" y1="1000" x2="1338.0" y2="1060.9"/>
+<line class="ln" x1="1120" y1="1000" x2="1378.5" y2="1151.0"/>
+<line class="ln" x1="1120" y1="1000" x2="1249.7" y2="1147.6"/>
+<line class="ln" x1="1120" y1="1000" x2="1210.4" y2="1235.7"/>
+<line class="ln" x1="1120" y1="1000" x2="1111.9" y2="1177.9"/>
+<line class="ln" x1="1120" y1="1000" x2="1007.8" y2="1230.4"/>
+<line class="ln" x1="1120" y1="1000" x2="977.2" y2="1140.3"/>
+<line class="ln" x1="1120" y1="1000" x2="848.1" y2="1137.1"/>
+<line class="ln" x1="670" y1="1000" x2="475.1" y2="995.9"/>
+<line class="ln" x1="670" y1="1000" x2="505.8" y2="1063.7"/>
+<line class="ln" x1="670" y1="1000" x2="594.9" y2="1108.9"/>
+<line class="ln" x1="670" y1="1000" x2="710.5" y2="1115.4"/>
+<path class="rl" d="M750 150 L565 355"/>
+<path class="tot-o" d="M380 560 L565 355"/><path class="tot-i" d="M380 560 L565 355"/>
+<path class="rl" d="M750 150 L935 355"/>
+<path class="tot-o" d="M1120 560 L935 355"/><path class="tot-i" d="M1120 560 L935 355"/>
+<path class="rl" d="M1120 560 L1120 775"/>
+<path class="tot-o" d="M1120 1000 L1120 775"/><path class="tot-i" d="M1120 1000 L1120 775"/>
+<path class="tot-o" d="M670 1000 L380 560"/><path class="tot-i" d="M670 1000 L380 560"/>
+<path class="tot-o" d="M670 1000 L1120 1000"/><path class="tot-i" d="M670 1000 L1120 1000"/>
+<ellipse class="ov kov" cx="535.0" cy="150.0" rx="34.0" ry="17"/>
+<text class="at key" x="535.0" y="154.0" text-anchor="middle">id</text>
+<ellipse class="ov" cx="598.0" cy="75.8" rx="34.0" ry="17"/>
+<text class="at" x="598.0" y="79.8" text-anchor="middle">email</text>
+<ellipse class="ov" cx="750.0" cy="45.0" rx="44.4" ry="17"/>
+<text class="at" x="750.0" y="49.0" text-anchor="middle">password</text>
+<ellipse class="ov" cx="902.0" cy="75.8" rx="34.0" ry="17"/>
+<text class="at" x="902.0" y="79.8" text-anchor="middle">role</text>
+<ellipse class="ov" cx="965.0" cy="150.0" rx="51.5" ry="17"/>
+<text class="at" x="965.0" y="154.0" text-anchor="middle">created_at</text>
+<ellipse class="ov kov" cx="361.3" cy="385.7" rx="34.0" ry="17"/>
+<text class="at key" x="361.3" y="389.7" text-anchor="middle">id</text>
+<ellipse class="ov" cx="263.1" cy="355.7" rx="34.0" ry="17"/>
+<text class="at" x="263.1" y="359.7" text-anchor="middle">name</text>
+<ellipse class="ov" cx="232.2" cy="432.9" rx="55.0" ry="17"/>
+<text class="at" x="232.2" y="436.9" text-anchor="middle">roll_number</text>
+<ellipse class="ov" cx="126.8" cy="457.1" rx="37.3" ry="17"/>
+<text class="at" x="126.8" y="461.1" text-anchor="middle">branch</text>
+<ellipse class="ov" cx="167.2" cy="535.3" rx="34.0" ry="17"/>
+<text class="at" x="167.2" y="539.3" text-anchor="middle">cgpa</text>
+<ellipse class="ov" cx="100.3" cy="603.2" rx="44.4" ry="17"/>
+<text class="at" x="100.3" y="607.2" text-anchor="middle">backlogs</text>
+<ellipse class="ov" cx="194.4" cy="648.4" rx="34.0" ry="17"/>
+<text class="at" x="194.4" y="652.4" text-anchor="middle">phone</text>
+<ellipse class="ov" cx="195.1" cy="730.5" rx="51.5" ry="17"/>
+<text class="at" x="195.1" y="734.5" text-anchor="middle">resume_url</text>
+<ellipse class="ov" cx="302.2" cy="723.1" rx="51.5" ry="17"/>
+<text class="at" x="302.2" y="727.1" text-anchor="middle">created_at</text>
+<ellipse class="ov" cx="370.1" cy="783.9" rx="51.5" ry="17"/>
+<text class="at" x="370.1" y="787.9" text-anchor="middle">updated_at</text>
+<ellipse class="ov kov" cx="1112.3" cy="390.1" rx="34.0" ry="17"/>
+<text class="at key" x="1112.3" y="394.1" text-anchor="middle">id</text>
+<ellipse class="ov" cx="1230.2" cy="363.6" rx="58.6" ry="17"/>
+<text class="at" x="1230.2" y="367.6" text-anchor="middle">company_name</text>
+<ellipse class="ov" cx="1283.5" cy="446.2" rx="55.0" ry="17"/>
+<text class="at" x="1283.5" y="450.2" text-anchor="middle">description</text>
+<ellipse class="ov" cx="1389.7" cy="497.6" rx="40.8" ry="17"/>
+<text class="at" x="1389.7" y="501.6" text-anchor="middle">website</text>
+<ellipse class="ov" cx="1337.9" cy="583.7" rx="37.3" ry="17"/>
+<text class="at" x="1337.9" y="587.7" text-anchor="middle">status</text>
+<ellipse class="ov" cx="1356.5" cy="676.2" rx="51.5" ry="17"/>
+<text class="at" x="1356.5" y="680.2" text-anchor="middle">created_at</text>
+<ellipse class="ov" cx="1236.6" cy="704.2" rx="51.5" ry="17"/>
+<text class="at" x="1236.6" y="708.2" text-anchor="middle">updated_at</text>
+<ellipse class="ov kov" cx="1262.8" cy="859.7" rx="34.0" ry="17"/>
+<text class="at key" x="1262.8" y="863.7" text-anchor="middle">id</text>
+<ellipse class="ov" cx="1391.9" cy="862.9" rx="34.0" ry="17"/>
+<text class="at" x="1391.9" y="866.9" text-anchor="middle">title</text>
+<ellipse class="ov" cx="1343.0" cy="950.9" rx="55.0" ry="17"/>
+<text class="at" x="1343.0" y="954.9" text-anchor="middle">description</text>
+<ellipse class="ov" cx="1447.8" cy="1008.6" rx="44.4" ry="17"/>
+<text class="at" x="1447.8" y="1012.6" text-anchor="middle">min_cgpa</text>
+<ellipse class="ov" cx="1338.0" cy="1060.9" rx="76.8" ry="21"/><ellipse class="ov" cx="1338.0" cy="1060.9" rx="71.8" ry="16"/>
+<text class="at" x="1338.0" y="1064.9" text-anchor="middle">allowed_branches</text>
+<ellipse class="ov" cx="1378.5" cy="1151.0" rx="58.6" ry="17"/>
+<text class="at" x="1378.5" y="1155.0" text-anchor="middle">max_backlogs</text>
+<ellipse class="ov" cx="1249.7" cy="1147.6" rx="65.7" ry="17"/>
+<text class="at" x="1249.7" y="1151.6" text-anchor="middle">salary_package</text>
+<ellipse class="ov" cx="1210.4" cy="1235.7" rx="44.4" ry="17"/>
+<text class="at" x="1210.4" y="1239.7" text-anchor="middle">location</text>
+<ellipse class="ov" cx="1111.9" cy="1177.9" rx="37.3" ry="17"/>
+<text class="at" x="1111.9" y="1181.9" text-anchor="middle">status</text>
+<ellipse class="ov" cx="1007.8" cy="1230.4" rx="72.8" ry="17"/>
+<text class="at" x="1007.8" y="1234.4" text-anchor="middle">rejection_reason</text>
+<ellipse class="ov" cx="977.2" cy="1140.3" rx="51.5" ry="17"/>
+<text class="at" x="977.2" y="1144.3" text-anchor="middle">created_at</text>
+<ellipse class="ov" cx="848.1" cy="1137.1" rx="51.5" ry="17"/>
+<text class="at" x="848.1" y="1141.1" text-anchor="middle">updated_at</text>
+<ellipse class="ov kov" cx="475.1" cy="995.9" rx="34.0" ry="17"/>
+<text class="at key" x="475.1" y="999.9" text-anchor="middle">id</text>
+<ellipse class="ov" cx="505.8" cy="1063.7" rx="37.3" ry="17"/>
+<text class="at" x="505.8" y="1067.7" text-anchor="middle">status</text>
+<ellipse class="ov" cx="594.9" cy="1108.9" rx="51.5" ry="17"/>
+<text class="at" x="594.9" y="1112.9" text-anchor="middle">applied_at</text>
+<ellipse class="ov" cx="710.5" cy="1115.4" rx="51.5" ry="17"/>
+<text class="at" x="710.5" y="1119.4" text-anchor="middle">updated_at</text>
+<polygon class="dia" points="565,325 620,355 565,385 510,355"/>
+<text class="rt" x="565" y="359.5" text-anchor="middle">HAS</text>
+<polygon class="dia" points="935,325 990,355 935,385 880,355"/>
+<text class="rt" x="935" y="359.5" text-anchor="middle">HAS</text>
+<polygon class="dia" points="1120,743 1185,775 1120,807 1055,775"/>
+<text class="rt" x="1120" y="779.5" text-anchor="middle">POSTS</text>
+<rect class="en" x="672" y="124" width="156" height="52"/>
+<text class="et" x="750" y="155" text-anchor="middle">USER</text>
+<rect class="en" x="302" y="534" width="156" height="52"/>
+<text class="et" x="380" y="565" text-anchor="middle">STUDENT</text>
+<rect class="en" x="1042" y="534" width="156" height="52"/>
+<text class="et" x="1120" y="565" text-anchor="middle">COMPANY</text>
+<rect class="en" x="1042" y="974" width="156" height="52"/>
+<text class="et" x="1120" y="1005" text-anchor="middle">JOB POSTING</text>
+<rect class="en" x="578" y="966" width="184" height="68"/>
+<polygon class="dia in" points="670,970 756,1000 670,1030 584,1000"/>
+<text class="et sm" x="670" y="1004.5" text-anchor="middle">APPLICATION</text>
+<text class="card" x="646.4" y="247.5" text-anchor="middle">1</text>
+<text class="card" x="461.4" y="452.5" text-anchor="middle">1</text>
+<text class="card" x="853.6" y="247.5" text-anchor="middle">1</text>
+<text class="card" x="1038.6" y="452.5" text-anchor="middle">1</text>
+<text class="card" x="1105.0" y="672.5" text-anchor="middle">1</text>
+<text class="card" x="1105.0" y="892.5" text-anchor="middle">N</text>
+<text class="card" x="537.5" y="776.7" text-anchor="middle">M</text>
+<text class="card" x="895.0" y="990.0" text-anchor="middle">N</text>
+</svg>

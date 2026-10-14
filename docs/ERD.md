@@ -1,78 +1,113 @@
 # Entity-Relationship Diagram
 
-Mirrors [`src/db/schema.ts`](../src/db/schema.ts) (Drizzle ORM). Renders automatically on GitHub.
+Mirrors [`db/schema.ts`](../db/schema.ts) (Drizzle ORM, PostgreSQL). Entity names are the real table names. Renders automatically on GitHub.
+
+## Chen notation
+
+Rectangles are entities, ovals are attributes, diamonds are relationships, an underlined attribute is the primary key, a double oval is multivalued (an array), and a double line means total participation. `applications` is an associative entity (the M:N table between students and jobs). Foreign-key columns are not drawn as ovals because the relationship lines stand in for them.
+
+![Chen-notation ER diagram](./erd-chen.svg)
+
+## Crow's-foot notation (full column list)
 
 ```mermaid
 erDiagram
-    User {
-        string id PK
-        string email
-        string password
-        Role role
-        datetime createdAt
+    users ||--o| student_profiles : "role = STUDENT"
+    users ||--o| company_profiles : "role = COMPANY"
+    company_profiles ||--o{ job_postings : "posts"
+    student_profiles ||--o{ applications : "submits"
+    job_postings ||--o{ applications : "receives"
+
+    users {
+        text id PK "cuid2"
+        text email UK
+        text password "hashed"
+        role role
+        timestamp created_at "default now()"
     }
 
-    StudentProfile {
-        string id PK
-        string userId FK
-        string name
-        string rollNumber
-        string branch
-        float cgpa
-        int backlogs
-        string phone
-        string resumeUrl
+    student_profiles {
+        text id PK "cuid2"
+        text user_id FK,UK "-> users.id, ON DELETE CASCADE"
+        text name
+        text roll_number UK
+        text branch
+        double cgpa
+        integer backlogs "default 0"
+        text phone "nullable"
+        text resume_url "nullable"
+        timestamp created_at "default now()"
+        timestamp updated_at "default now()"
     }
 
-    CompanyProfile {
-        string id PK
-        string userId FK
-        string companyName
-        string description
-        string website
-        ApprovalStatus status
+    company_profiles {
+        text id PK "cuid2"
+        text user_id FK,UK "-> users.id, ON DELETE CASCADE"
+        text company_name
+        text description "nullable"
+        text website "nullable"
+        approval_status status "default PENDING"
+        timestamp created_at "default now()"
+        timestamp updated_at "default now()"
     }
 
-    JobPosting {
-        string id PK
-        string companyId FK
-        string title
-        string description
-        float minCgpa
-        string_array allowedBranches
-        int maxBacklogs
-        string salaryPackage
-        string location
-        ApprovalStatus status
-        string rejectionReason
+    job_postings {
+        text id PK "cuid2"
+        text company_id FK "-> company_profiles.id, ON DELETE CASCADE"
+        text title
+        text description
+        double min_cgpa "nullable"
+        text_array allowed_branches "default {}"
+        integer max_backlogs "nullable"
+        text salary_package "nullable"
+        text location "nullable"
+        approval_status status "default PENDING"
+        text rejection_reason "nullable"
+        timestamp created_at "default now()"
+        timestamp updated_at "default now()"
     }
 
-    Application {
-        string id PK
-        string studentId FK
-        string jobId FK
-        ApplicationStatus status
-        datetime appliedAt
+    applications {
+        text id PK "cuid2"
+        text student_id FK "-> student_profiles.id, ON DELETE CASCADE"
+        text job_id FK "-> job_postings.id, ON DELETE CASCADE"
+        application_status status "default APPLIED"
+        timestamp applied_at "default now()"
+        timestamp updated_at "default now()"
     }
-
-    User ||--o| StudentProfile : "has (if role=STUDENT)"
-    User ||--o| CompanyProfile : "has (if role=COMPANY)"
-    CompanyProfile ||--o{ JobPosting : "posts"
-    StudentProfile ||--o{ Application : "submits"
-    JobPosting ||--o{ Application : "receives"
 ```
 
 ## Enums
 
-| Enum | Values |
+| Postgres enum | Values | Used by |
+|---|---|---|
+| `role` | `STUDENT`, `COMPANY`, `ADMIN` | `users.role` |
+| `approval_status` | `PENDING`, `APPROVED`, `REJECTED` | `company_profiles.status`, `job_postings.status` |
+| `application_status` | `APPLIED`, `SHORTLISTED`, `REJECTED`, `HIRED` | `applications.status` |
+
+## Keys and constraints
+
+| Table | Constraint |
 |---|---|
-| `Role` | `STUDENT`, `COMPANY`, `ADMIN` |
-| `ApprovalStatus` | `PENDING`, `APPROVED`, `REJECTED` — used by both `CompanyProfile.status` and `JobPosting.status` |
-| `ApplicationStatus` | `APPLIED`, `SHORTLISTED`, `REJECTED`, `HIRED` |
+| `users` | `email` unique |
+| `student_profiles` | `user_id` unique (one profile per user), `roll_number` unique |
+| `company_profiles` | `user_id` unique (one profile per user) |
+| `applications` | unique index `applications_student_job_idx` on `(student_id, job_id)`, so a student can apply to a given job only once |
+
+All columns are `NOT NULL` unless marked nullable above. Primary keys are `text` cuid2 values generated in the app (`createId()`), not by the database.
+
+## Delete behaviour
+
+Every foreign key is `ON DELETE CASCADE`, so deletes travel down the chain:
+
+- Deleting a **user** deletes their student or company profile.
+- Deleting a **company profile** deletes all of its job postings, and with them every application to those jobs.
+- Deleting a **student profile** deletes all of that student's applications.
 
 ## Notes
 
-- `ADMIN` users have no profile row — they're identified by `User.role` alone, and seeded directly (no self-registration).
-- `Application` has a unique constraint on `(studentId, jobId)` — a student can apply to a given job only once.
-- `JobPosting.allowedBranches` is a plain string array of eligible branches; `minCgpa`/`maxBacklogs` are advisory criteria shown to students, **not** enforced at apply-time (per MVP scope — see plan).
-- A `JobPosting` only becomes visible to students once `status = APPROVED`, set by an Admin. Same approval gate applies to `CompanyProfile` before a company can post jobs.
+- `ADMIN` users have no profile row. They're identified by `users.role` alone and seeded directly (no self-registration).
+- The database does not tie the profile type to `users.role`. The app has to make sure a `STUDENT` user only gets a `student_profiles` row and a `COMPANY` user only gets a `company_profiles` row.
+- `job_postings.allowed_branches` is a plain `text[]` of eligible branches. `min_cgpa` and `max_backlogs` are advisory criteria shown to students and are **not** enforced when a student applies (MVP scope).
+- A job posting is visible to students only once its `status = APPROVED`, set by an Admin. The same approval gate applies to `company_profiles` before a company can post jobs.
+- `updated_at` defaults to `now()` on insert only. Drizzle does not update it automatically, so update queries must set it.
