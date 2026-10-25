@@ -29,11 +29,6 @@ export function Hero() {
 
       <div className="mx-auto grid max-w-7xl items-center gap-14 px-6 pt-32 pb-20 sm:px-10 sm:pt-36 lg:min-h-[min(100svh,56rem)] lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pt-28 lg:pb-24">
         <div>
-          <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-white/90 uppercase">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#F12D32]" />
-            Connect &middot; Recruit &middot; Build your future
-          </p>
-
           <h1 className="mt-6 text-4xl leading-[1.08] font-extrabold tracking-tight text-balance sm:text-5xl lg:text-6xl">
             Student Placement Management{" "}
             <span className="text-[#F12D32]">System</span>
