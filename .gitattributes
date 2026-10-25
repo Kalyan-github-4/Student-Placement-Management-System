@@ -1,0 +1,13 @@
+# Store and check out text files with LF line endings on every OS,
+# overriding core.autocrlf so Windows doesn't convert them to CRLF.
+* text=auto eol=lf
+
+# Binary files: never touch line endings
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.woff binary
+*.woff2 binary
