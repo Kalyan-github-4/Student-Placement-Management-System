@@ -1,9 +1,27 @@
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { db } from "./index";
-import { users, studentProfiles, companyProfiles, jobPostings } from "./schema";
+import { domainFromWebsite } from "../lib/company";
+import {
+  users,
+  studentProfiles,
+  companies,
+  companyUsers,
+  tpoProfiles,
+  jobPostings,
+} from "./schema";
 
 const defaultUsers = [
+  {
+    email: "admin@brainware.edu",
+    password: "Admin@123",
+    role: "SUPER_ADMIN" as const,
+  },
+  {
+    email: "tpo@brainware.edu",
+    password: "Tpo@123",
+    role: "TPO" as const,
+  },
   {
     email: "student@brainware.edu",
     password: "Student@123",
@@ -12,12 +30,7 @@ const defaultUsers = [
   {
     email: "company@brainware.edu",
     password: "Company@123",
-    role: "COMPANY" as const,
-  },
-  {
-    email: "tpo@brainware.edu",
-    password: "Tpo@123",
-    role: "ADMIN" as const,
+    role: "RECRUITER" as const,
   },
 ];
 
@@ -30,10 +43,23 @@ const demoCompanies: {
   companyName: string;
   description: string;
   website: string;
+  industry: string;
+  size: string;
+  address: string;
+  linkedinUrl: string;
+  gstinOrCin: string | null;
+  recruiter: { name: string; designation: string; phone: string };
+  status?: "PENDING" | "APPROVED";
   jobs: DemoJob[];
 }[] = [
   {
     email: "company@brainware.edu",
+    industry: "Software Product",
+    size: "51-200",
+    address: "Sector V, Salt Lake, Kolkata 700091",
+    linkedinUrl: "https://www.linkedin.com/company/demo-technologies",
+    gstinOrCin: "19AABCD1234E1Z5",
+    recruiter: { name: "Priya Sen", designation: "HR Manager", phone: "9830000001" },
     companyName: "Demo Technologies Pvt. Ltd.",
     description: "Default company account for testing the recruiter portal.",
     website: "https://example.com",
@@ -51,6 +77,12 @@ const demoCompanies: {
   },
   {
     email: "hr@nimbuscloud.example",
+    industry: "IT Services",
+    size: "1001-5000",
+    address: "Outer Ring Road, Bellandur, Bengaluru 560103",
+    linkedinUrl: "https://www.linkedin.com/company/nimbus-cloud",
+    gstinOrCin: "29AABCN5678F1Z2",
+    recruiter: { name: "Arjun Rao", designation: "Talent Acquisition Lead", phone: "9830000002" },
     companyName: "Nimbus Cloud Systems",
     description: "Cloud infrastructure and DevOps services for enterprise customers.",
     website: "https://nimbuscloud.example",
@@ -78,6 +110,12 @@ const demoCompanies: {
   },
   {
     email: "careers@quantra.example",
+    industry: "Consulting",
+    size: "201-1000",
+    address: "Action Area I, New Town, Kolkata 700156",
+    linkedinUrl: "https://www.linkedin.com/company/quantra-analytics",
+    gstinOrCin: "19AABCQ9012G1Z8",
+    recruiter: { name: "Meera Iyer", designation: "Campus Recruiter", phone: "9830000003" },
     companyName: "Quantra Analytics",
     description: "Data analytics and machine learning consulting for retail and banking.",
     website: "https://quantra.example",
@@ -106,6 +144,12 @@ const demoCompanies: {
   },
   {
     email: "hiring@vertexfin.example",
+    industry: "Banking & Finance",
+    size: "201-1000",
+    address: "Bandra Kurla Complex, Mumbai 400051",
+    linkedinUrl: "https://www.linkedin.com/company/vertex-fintech",
+    gstinOrCin: "27AABCV3456H1Z4",
+    recruiter: { name: "Rohan Mehta", designation: "HR Business Partner", phone: "9830000004" },
     companyName: "Vertex Fintech",
     description: "Digital payments and lending platform serving small businesses across India.",
     website: "https://vertexfin.example",
@@ -124,6 +168,12 @@ const demoCompanies: {
   },
   {
     email: "talent@orbitembedded.example",
+    industry: "Electronics & Semiconductors",
+    size: "51-200",
+    address: "Sector 62, Noida 201309",
+    linkedinUrl: "https://www.linkedin.com/company/orbit-embedded",
+    gstinOrCin: "09AABCO7890J1Z6",
+    recruiter: { name: "Kavya Nair", designation: "HR Executive", phone: "9830000005" },
     companyName: "Orbit Embedded Technologies",
     description: "Embedded systems and IoT products for automotive and industrial clients.",
     website: "https://orbitembedded.example",
@@ -142,6 +192,12 @@ const demoCompanies: {
   },
   {
     email: "jobs@greenline.example",
+    industry: "Energy",
+    size: "201-1000",
+    address: "City Centre, Durgapur 713216",
+    linkedinUrl: "https://www.linkedin.com/company/greenline-energy",
+    gstinOrCin: "19AABCG2345K1Z1",
+    recruiter: { name: "Sourav Das", designation: "Recruitment Manager", phone: "9830000006" },
     companyName: "Greenline Energy Solutions",
     description: "Renewable energy EPC company building solar and wind projects.",
     website: "https://greenline.example",
@@ -165,6 +221,21 @@ const demoCompanies: {
       },
     ],
   },
+  {
+    // Left pending so the TPO approval flow can be tried straight after seeding.
+    email: "hr@acmerobotics.example",
+    industry: "Manufacturing",
+    size: "51-200",
+    address: "Kalyani Industrial Estate, Nadia 741235",
+    linkedinUrl: "https://www.linkedin.com/company/acme-robotics",
+    gstinOrCin: "19AABCA6789L1Z3",
+    recruiter: { name: "Neha Gupta", designation: "HR Lead", phone: "9830000007" },
+    companyName: "Acme Robotics",
+    description: "Industrial automation and robotics for factories in eastern India.",
+    website: "https://acmerobotics.example",
+    status: "PENDING",
+    jobs: [],
+  },
 ];
 
 type NewUser = { email: string; password: string; role: (typeof users.$inferInsert)["role"] };
@@ -178,30 +249,50 @@ async function upsertUser({ email, password, role }: NewUser) {
 
   const [user] = await db
     .insert(users)
-    .values({ email, password: await bcrypt.hash(password, 10), role })
+    .values({
+      email,
+      passwordHash: await bcrypt.hash(password, 10),
+      role,
+      status: "ACTIVE",
+      emailVerified: new Date(),
+    })
     .returning();
   console.log(`  + created ${role.toLowerCase()} ${email}`);
   return user;
 }
 
-async function seedCompany({ email, companyName, description, website, jobs }: (typeof demoCompanies)[number]) {
-  const user = await upsertUser({ email, password: "Company@123", role: "COMPANY" });
+async function seedCompany({
+  email,
+  companyName,
+  recruiter,
+  jobs,
+  status = "APPROVED",
+  ...details
+}: (typeof demoCompanies)[number]) {
+  const user = await upsertUser({ email, password: "Company@123", role: "RECRUITER" });
 
-  await db
-    .insert(companyProfiles)
-    .values({ userId: user.id, companyName, description, website, status: "APPROVED" })
-    .onConflictDoNothing();
-  const [company] = await db
+  const [existingMember] = await db
     .select()
-    .from(companyProfiles)
-    .where(eq(companyProfiles.userId, user.id));
+    .from(companyUsers)
+    .where(eq(companyUsers.userId, user.id));
+  if (existingMember) return;
 
-  const existingJobs = await db
-    .select({ id: jobPostings.id })
-    .from(jobPostings)
-    .where(eq(jobPostings.companyId, company.id));
-  if (existingJobs.length > 0) return;
+  const [company] = await db
+    .insert(companies)
+    .values({
+      ...details,
+      name: companyName,
+      domain: domainFromWebsite(details.website)!,
+      status,
+      reviewedAt: status === "APPROVED" ? new Date() : null,
+    })
+    .returning();
+  await db
+    .insert(companyUsers)
+    .values({ userId: user.id, companyId: company.id, ...recruiter, isAdmin: true });
+  console.log(`  + created ${status.toLowerCase()} company ${companyName}`);
 
+  if (jobs.length === 0) return;
   await db
     .insert(jobPostings)
     .values(jobs.map((job) => ({ ...job, companyId: company.id, status: "APPROVED" as const })));
@@ -210,7 +301,12 @@ async function seedCompany({ email, companyName, description, website, jobs }: (
 
 async function main() {
   console.log("Seeding default users...");
-  const [student] = await Promise.all(defaultUsers.map(upsertUser));
+  const [, tpo, student] = await Promise.all(defaultUsers.map(upsertUser));
+
+  await db
+    .insert(tpoProfiles)
+    .values({ userId: tpo.id, name: "Placement Officer", designation: "Training & Placement Officer" })
+    .onConflictDoNothing();
 
   await db
     .insert(studentProfiles)
@@ -231,6 +327,14 @@ async function main() {
   console.log("\nDefault logins:");
   console.table(
     defaultUsers.map(({ role, email, password }) => ({ role, email, password }))
+  );
+  console.log("\nDemo recruiters (password Company@123):");
+  console.table(
+    demoCompanies.map(({ email, companyName, status = "APPROVED" }) => ({
+      email,
+      companyName,
+      status,
+    }))
   );
 }
 
