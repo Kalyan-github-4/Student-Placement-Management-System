@@ -3,45 +3,33 @@
 import { useActionState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Building2, GraduationCap, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FormNotice } from "@/components/auth/auth-card";
+import { PasswordInput } from "@/components/forms/password-input";
 import { login } from "./actions";
 
-const roles = [
-  { value: "student", label: "Student", icon: GraduationCap },
-  { value: "company", label: "Company", icon: Building2 },
-  { value: "admin", label: "TPO", icon: ShieldCheck },
-];
+const notices: Record<string, string> = {
+  verified: "Email verified. You can sign in now.",
+  "password-reset": "Password updated. Sign in with your new password.",
+  activated: "Account activated. Sign in with your new password.",
+  registered: "Company registered and approved. Sign in to continue.",
+};
 
 export function LoginForm() {
   const searchParams = useSearchParams();
-  const initialRole = roles.some((r) => r.value === searchParams.get("role"))
-    ? searchParams.get("role")!
-    : "student";
+  const notice = notices[searchParams.get("notice") ?? ""];
+  const suspended = searchParams.get("error") === "suspended";
   const [state, action, pending] = useActionState(login, undefined);
 
   return (
     <form action={action} className="grid gap-5">
-      <fieldset className="grid grid-cols-3 gap-2">
-        <legend className="sr-only">Account type</legend>
-        {roles.map((role) => (
-          <label
-            key={role.value}
-            className="flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border border-[#D9E4F2] p-3 text-sm font-medium text-[#526987] transition has-checked:border-[#174A91] has-checked:bg-[#F0F6FD] has-checked:text-[#174A91] has-focus-visible:outline-2 has-focus-visible:outline-[#174A91]"
-          >
-            <input
-              type="radio"
-              name="role"
-              value={role.value}
-              defaultChecked={role.value === initialRole}
-              className="sr-only"
-            />
-            <role.icon className="h-5 w-5" />
-            {role.label}
-          </label>
-        ))}
-      </fieldset>
+      {notice && !state?.error && <FormNotice>{notice}</FormNotice>}
+      {suspended && !state?.error && (
+        <FormNotice tone="error">
+          This account has been suspended. Contact the placement cell.
+        </FormNotice>
+      )}
 
       <div className="grid gap-2">
         <Label htmlFor="email" className="text-[#152C50]">
@@ -51,13 +39,20 @@ export function LoginForm() {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="password" className="text-[#152C50]">
-          Password
-        </Label>
-        <Input
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor="password" className="text-[#152C50]">
+            Password
+          </Label>
+          <Link
+            href="/forgot-password"
+            className="text-sm font-medium text-[#174A91] underline-offset-4 hover:underline"
+          >
+            Forgot password?
+          </Link>
+        </div>
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="current-password"
           required
           className="h-10"
@@ -65,9 +60,14 @@ export function LoginForm() {
       </div>
 
       {state?.error && (
-        <p role="alert" className="rounded-lg bg-[#F12D32]/10 px-3 py-2 text-sm text-[#C81E23]">
-          {state.error}
-        </p>
+        <FormNotice tone="error">
+          {state.error}{" "}
+          {state.unverified && (
+            <Link href="/verify-email/resend" className="font-semibold underline underline-offset-4">
+              Resend the link
+            </Link>
+          )}
+        </FormNotice>
       )}
 
       <button
@@ -79,6 +79,15 @@ export function LoginForm() {
       </button>
 
       <p className="text-center text-sm text-[#526987]">
+        Recruiting for a company?{" "}
+        <Link
+          href="/register/company"
+          className="font-semibold text-[#174A91] underline-offset-4 hover:underline"
+        >
+          Register your company
+        </Link>
+      </p>
+      <p className="-mt-2 text-center text-sm text-[#526987]">
         <Link href="/" className="font-semibold text-[#174A91] underline-offset-4 hover:underline">
           Back to home
         </Link>

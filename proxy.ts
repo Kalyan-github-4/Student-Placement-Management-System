@@ -11,10 +11,9 @@ export const proxy = auth((req) => {
   if (!portal) return;
 
   const role = req.auth?.user?.role;
-  if (!role) {
-    return NextResponse.redirect(
-      new URL(`/login?role=${portal[0].toLowerCase()}`, req.nextUrl)
-    );
+  // Sessions issued before a role was renamed carry a role with no portal.
+  if (!role || !(role in portalPaths)) {
+    return NextResponse.redirect(new URL("/login", req.nextUrl));
   }
   if (role !== portal[0]) {
     return NextResponse.redirect(new URL(portalPaths[role], req.nextUrl));
@@ -22,5 +21,5 @@ export const proxy = auth((req) => {
 });
 
 export const config = {
-  matcher: ["/student/:path*", "/company/:path*", "/admin/:path*"],
+  matcher: ["/student/:path*", "/company/:path*", "/tpo/:path*", "/admin/:path*"],
 };
