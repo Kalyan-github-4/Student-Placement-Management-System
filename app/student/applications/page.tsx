@@ -32,7 +32,7 @@ export default async function ApplicationsPage() {
               <div>
                 <p className="font-semibold text-[#152C50]">{application.job.title}</p>
                 <p className="text-sm text-[#526987]">
-                  {application.job.company.companyName}
+                  {application.job.company.name}
                   {application.job.location && ` · ${application.job.location}`}
                   {application.job.salaryPackage && ` · ${application.job.salaryPackage}`}
                 </p>

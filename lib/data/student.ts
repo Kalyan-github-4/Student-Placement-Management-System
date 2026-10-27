@@ -1,7 +1,7 @@
 import "server-only";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { applications, companyProfiles, jobPostings, studentProfiles } from "@/db/schema";
+import { applications, companies, jobPostings, studentProfiles } from "@/db/schema";
 
 export async function getStudentProfile(userId: string) {
   const [profile] = await db
@@ -13,9 +13,9 @@ export async function getStudentProfile(userId: string) {
 
 // Approved companies with their approved openings.
 export async function getOpenCompanies() {
-  const companies = await db.query.companyProfiles.findMany({
-    where: eq(companyProfiles.status, "APPROVED"),
-    orderBy: companyProfiles.companyName,
+  const rows = await db.query.companies.findMany({
+    where: eq(companies.status, "APPROVED"),
+    orderBy: companies.name,
     with: {
       jobPostings: {
         where: eq(jobPostings.status, "APPROVED"),
@@ -23,12 +23,12 @@ export async function getOpenCompanies() {
       },
     },
   });
-  return companies.filter((company) => company.jobPostings.length > 0);
+  return rows.filter((company) => company.jobPostings.length > 0);
 }
 
 export async function getOpenCompany(companyId: string) {
-  const company = await db.query.companyProfiles.findFirst({
-    where: and(eq(companyProfiles.id, companyId), eq(companyProfiles.status, "APPROVED")),
+  const company = await db.query.companies.findFirst({
+    where: and(eq(companies.id, companyId), eq(companies.status, "APPROVED")),
     with: {
       jobPostings: {
         where: eq(jobPostings.status, "APPROVED"),
@@ -51,12 +51,12 @@ export async function getApplyableJob(jobId: string) {
   const [row] = await db
     .select({ job: jobPostings })
     .from(jobPostings)
-    .innerJoin(companyProfiles, eq(jobPostings.companyId, companyProfiles.id))
+    .innerJoin(companies, eq(jobPostings.companyId, companies.id))
     .where(
       and(
         eq(jobPostings.id, jobId),
         eq(jobPostings.status, "APPROVED"),
-        eq(companyProfiles.status, "APPROVED")
+        eq(companies.status, "APPROVED")
       )
     );
   return row?.job ?? null;

@@ -59,7 +59,7 @@ export default async function CompanyDetailsPage({
             <Building2 className="h-7 w-7" />
           </span>
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-bold text-[#152C50]">{company.companyName}</h1>
+            <h1 className="text-2xl font-bold text-[#152C50]">{company.name}</h1>
             {company.website && (
               <a
                 href={company.website}

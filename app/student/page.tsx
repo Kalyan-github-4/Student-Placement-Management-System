@@ -86,7 +86,7 @@ export default async function StudentOverview() {
                 <div>
                   <p className="font-medium text-[#152C50]">{application.job.title}</p>
                   <p className="text-sm text-[#526987]">
-                    {application.job.company.companyName} · {formatDate(application.appliedAt)}
+                    {application.job.company.name} · {formatDate(application.appliedAt)}
                   </p>
                 </div>
                 <StatusBadge status={application.status} />

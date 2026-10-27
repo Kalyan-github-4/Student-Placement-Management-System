@@ -52,7 +52,7 @@ export default async function CompaniesPage() {
               <div className="min-w-0 flex-1">
                 <h2 className="text-lg font-semibold text-[#152C50]">
                   <Link href={`/student/companies/${company.id}`} className="hover:text-[#174A91]">
-                    {company.companyName}
+                    {company.name}
                   </Link>
                 </h2>
                 {company.description && (

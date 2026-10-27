@@ -1,8 +1,6 @@
 import { Suspense } from "react";
 import { LogOut } from "lucide-react";
 import { signOut } from "@/auth";
-import { requireRole } from "@/lib/dal";
-import { roleLabels, type Role } from "@/lib/roles";
 import { PortalNav, type NavItem } from "./portal-nav";
 
 export function PortalShell({
@@ -40,19 +38,6 @@ export function PortalShell({
       <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-10 sm:py-10">
         <Suspense fallback={<p className="text-[#526987]">Loading…</p>}>{children}</Suspense>
       </main>
-    </div>
-  );
-}
-
-export async function PortalWelcome({ role }: { role: Role }) {
-  const user = await requireRole(role);
-  return (
-    <div className="rounded-2xl border border-[#D9E4F2] bg-white p-6 sm:p-8">
-      <p className="text-sm font-medium text-[#174A91]">{roleLabels[role]}</p>
-      <h1 className="mt-1 text-2xl font-bold text-[#152C50]">Welcome back</h1>
-      <p className="mt-2 text-[#526987]">
-        Signed in as <span className="font-medium text-[#152C50]">{user.email}</span>
-      </p>
     </div>
   );
 }
