@@ -1,7 +1,9 @@
 import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { db } from "./index";
 import { domainFromWebsite } from "../lib/company";
+import { eligibilityIssues } from "../lib/eligibility";
+import { academicFields } from "../lib/student";
 import {
   users,
   students,
@@ -10,410 +12,378 @@ import {
   tpoProfiles,
   drives,
   eligibilityCriteria,
+  applications,
+  correctionRequests,
+  auditLogs,
 } from "./schema";
+import {
+  DAY,
+  between,
+  daysAgo,
+  demoCompanies,
+  demoCorrections,
+  demoStudents,
+  pick,
+  random,
+  type DemoCompany,
+} from "./seed-data";
 
 const defaultUsers = [
-  {
-    email: "admin@brainware.edu",
-    password: "Admin@123",
-    role: "SUPER_ADMIN" as const,
-  },
-  {
-    email: "tpo@brainware.edu",
-    password: "Tpo@123",
-    role: "TPO" as const,
-  },
-  {
-    email: "student@brainware.edu",
-    password: "Student@123",
-    role: "STUDENT" as const,
-  },
-  {
-    email: "company@brainware.edu",
-    password: "Company@123",
-    role: "RECRUITER" as const,
-  },
+  { email: "admin@brainware.edu", password: "Admin@123", role: "SUPER_ADMIN" as const },
+  { email: "tpo@brainware.edu", password: "Tpo@123", role: "TPO" as const },
 ];
 
-// Demo openings; each becomes an OPEN drive with its eligibility rules.
-type DemoJob = {
-  title: string;
-  description: string;
-  minCgpa?: number;
-  allowedBranches?: string[];
-  maxBacklogs?: number;
-  salaryPackage: string;
-  location: string;
+const extraTpos = [
+  { email: "tpo.assistant@brainware.edu", name: "Sharmila Dutta", designation: "Assistant Placement Officer" },
+];
+
+type Role = (typeof users.$inferInsert)["role"];
+type AuditEntry = typeof auditLogs.$inferInsert;
+type DriveRow = typeof drives.$inferSelect & { criteria: typeof eligibilityCriteria.$inferSelect };
+
+// bcrypt is slow on purpose, so hash each demo password once.
+const hashes = new Map<string, Promise<string>>();
+const hashFor = (password: string) => {
+  if (!hashes.has(password)) hashes.set(password, bcrypt.hash(password, 10));
+  return hashes.get(password)!;
 };
 
-const DAY = 24 * 60 * 60 * 1000;
-
-// Fictional companies so the student portal has openings to browse.
-// Each gets a recruiter login: <email> / Company@123.
-const demoCompanies: {
-  email: string;
-  companyName: string;
-  description: string;
-  website: string;
-  industry: string;
-  size: string;
-  address: string;
-  linkedinUrl: string;
-  gstinOrCin: string | null;
-  recruiter: { name: string; designation: string; phone: string };
-  status?: "PENDING" | "APPROVED";
-  jobs: DemoJob[];
-}[] = [
-  {
-    email: "company@brainware.edu",
-    industry: "Software Product",
-    size: "51-200",
-    address: "Sector V, Salt Lake, Kolkata 700091",
-    linkedinUrl: "https://www.linkedin.com/company/demo-technologies",
-    gstinOrCin: "19AABCD1234E1Z5",
-    recruiter: { name: "Priya Sen", designation: "HR Manager", phone: "9830000001" },
-    companyName: "Demo Technologies Pvt. Ltd.",
-    description: "Default company account for testing the recruiter portal.",
-    website: "https://example.com",
-    jobs: [
-      {
-        title: "Graduate Engineer Trainee",
-        description:
-          "One-year trainee programme covering full-stack development, testing and deployment on client projects.",
-        minCgpa: 6.5,
-        maxBacklogs: 1,
-        salaryPackage: "4.5 LPA",
-        location: "Kolkata",
-      },
-    ],
-  },
-  {
-    email: "hr@nimbuscloud.example",
-    industry: "IT Services",
-    size: "1001-5000",
-    address: "Outer Ring Road, Bellandur, Bengaluru 560103",
-    linkedinUrl: "https://www.linkedin.com/company/nimbus-cloud",
-    gstinOrCin: "29AABCN5678F1Z2",
-    recruiter: { name: "Arjun Rao", designation: "Talent Acquisition Lead", phone: "9830000002" },
-    companyName: "Nimbus Cloud Systems",
-    description: "Cloud infrastructure and DevOps services for enterprise customers.",
-    website: "https://nimbuscloud.example",
-    jobs: [
-      {
-        title: "Associate Software Engineer",
-        description:
-          "Build and maintain microservices in Go and TypeScript. Training on Kubernetes and AWS provided.",
-        minCgpa: 7.0,
-        allowedBranches: ["CSE", "CSE (AI & ML)", "CSE (Data Science)", "IT", "MCA"],
-        maxBacklogs: 0,
-        salaryPackage: "7.2 LPA",
-        location: "Bengaluru",
-      },
-      {
-        title: "Cloud Support Engineer",
-        description:
-          "Help customers troubleshoot Linux, networking and cloud deployments. Rotational shifts.",
-        minCgpa: 6.0,
-        maxBacklogs: 2,
-        salaryPackage: "5 LPA",
-        location: "Hyderabad",
-      },
-    ],
-  },
-  {
-    email: "careers@quantra.example",
-    industry: "Consulting",
-    size: "201-1000",
-    address: "Action Area I, New Town, Kolkata 700156",
-    linkedinUrl: "https://www.linkedin.com/company/quantra-analytics",
-    gstinOrCin: "19AABCQ9012G1Z8",
-    recruiter: { name: "Meera Iyer", designation: "Campus Recruiter", phone: "9830000003" },
-    companyName: "Quantra Analytics",
-    description: "Data analytics and machine learning consulting for retail and banking.",
-    website: "https://quantra.example",
-    jobs: [
-      {
-        title: "Data Analyst",
-        description:
-          "Work with SQL, Python and Power BI to turn business data into dashboards and insights.",
-        minCgpa: 7.5,
-        allowedBranches: ["CSE", "CSE (AI & ML)", "CSE (Data Science)", "IT", "BCA", "MCA"],
-        maxBacklogs: 0,
-        salaryPackage: "6 LPA",
-        location: "Kolkata",
-      },
-      {
-        title: "Machine Learning Engineer",
-        description:
-          "Train, evaluate and deploy ML models for demand forecasting and fraud detection.",
-        minCgpa: 8.5,
-        allowedBranches: ["CSE (AI & ML)", "CSE (Data Science)"],
-        maxBacklogs: 0,
-        salaryPackage: "10 LPA",
-        location: "Pune",
-      },
-    ],
-  },
-  {
-    email: "hiring@vertexfin.example",
-    industry: "Banking & Finance",
-    size: "201-1000",
-    address: "Bandra Kurla Complex, Mumbai 400051",
-    linkedinUrl: "https://www.linkedin.com/company/vertex-fintech",
-    gstinOrCin: "27AABCV3456H1Z4",
-    recruiter: { name: "Rohan Mehta", designation: "HR Business Partner", phone: "9830000004" },
-    companyName: "Vertex Fintech",
-    description: "Digital payments and lending platform serving small businesses across India.",
-    website: "https://vertexfin.example",
-    jobs: [
-      {
-        title: "Backend Developer",
-        description:
-          "Design reliable payment APIs in Java and Spring Boot with a focus on security and scale.",
-        minCgpa: 7.0,
-        allowedBranches: ["CSE", "IT", "MCA"],
-        maxBacklogs: 0,
-        salaryPackage: "8.5 LPA",
-        location: "Mumbai",
-      },
-    ],
-  },
-  {
-    email: "talent@orbitembedded.example",
-    industry: "Electronics & Semiconductors",
-    size: "51-200",
-    address: "Sector 62, Noida 201309",
-    linkedinUrl: "https://www.linkedin.com/company/orbit-embedded",
-    gstinOrCin: "09AABCO7890J1Z6",
-    recruiter: { name: "Kavya Nair", designation: "HR Executive", phone: "9830000005" },
-    companyName: "Orbit Embedded Technologies",
-    description: "Embedded systems and IoT products for automotive and industrial clients.",
-    website: "https://orbitembedded.example",
-    jobs: [
-      {
-        title: "Embedded Systems Engineer",
-        description:
-          "Develop firmware in C for microcontrollers, and test hardware with oscilloscopes and logic analysers.",
-        minCgpa: 6.5,
-        allowedBranches: ["ECE", "EE"],
-        maxBacklogs: 1,
-        salaryPackage: "5.5 LPA",
-        location: "Noida",
-      },
-    ],
-  },
-  {
-    email: "jobs@greenline.example",
-    industry: "Energy",
-    size: "201-1000",
-    address: "City Centre, Durgapur 713216",
-    linkedinUrl: "https://www.linkedin.com/company/greenline-energy",
-    gstinOrCin: "19AABCG2345K1Z1",
-    recruiter: { name: "Sourav Das", designation: "Recruitment Manager", phone: "9830000006" },
-    companyName: "Greenline Energy Solutions",
-    description: "Renewable energy EPC company building solar and wind projects.",
-    website: "https://greenline.example",
-    jobs: [
-      {
-        title: "Graduate Engineer – Projects",
-        description:
-          "Assist with design, site execution and commissioning of utility-scale solar plants.",
-        minCgpa: 6.0,
-        allowedBranches: ["EE", "ME", "CE"],
-        maxBacklogs: 2,
-        salaryPackage: "4.8 LPA",
-        location: "Durgapur",
-      },
-      {
-        title: "Business Analyst Intern",
-        description: "Six-month paid internship supporting the bids and market research team.",
-        minCgpa: 6.0,
-        salaryPackage: "₹25,000 / month",
-        location: "Kolkata (Hybrid)",
-      },
-    ],
-  },
-  {
-    // Left pending so the TPO approval flow can be tried straight after seeding.
-    email: "hr@acmerobotics.example",
-    industry: "Manufacturing",
-    size: "51-200",
-    address: "Kalyani Industrial Estate, Nadia 741235",
-    linkedinUrl: "https://www.linkedin.com/company/acme-robotics",
-    gstinOrCin: "19AABCA6789L1Z3",
-    recruiter: { name: "Neha Gupta", designation: "HR Lead", phone: "9830000007" },
-    companyName: "Acme Robotics",
-    description: "Industrial automation and robotics for factories in eastern India.",
-    website: "https://acmerobotics.example",
-    status: "PENDING",
-    jobs: [],
-  },
-];
-
-type NewUser = { email: string; password: string; role: (typeof users.$inferInsert)["role"] };
-
-async function upsertUser({ email, password, role }: NewUser) {
-  const [existing] = await db.select().from(users).where(eq(users.email, email));
-  if (existing) {
-    console.log(`  - ${email} already exists, skipping`);
-    return existing;
-  }
-
+async function createUser(email: string, password: string, role: Role, createdAt = new Date()) {
   const [user] = await db
     .insert(users)
     .values({
       email,
-      passwordHash: await bcrypt.hash(password, 10),
+      passwordHash: await hashFor(password),
       role,
       status: "ACTIVE",
-      emailVerified: new Date(),
+      emailVerified: createdAt,
+      createdAt,
+      // Most demo accounts have signed in at some point.
+      lastLogin: random() < 0.8 ? new Date(Math.max(createdAt.getTime(), Date.now() - between(0, 6) * DAY)) : null,
     })
     .returning();
-  console.log(`  + created ${role.toLowerCase()} ${email}`);
   return user;
 }
 
-async function seedCompany({
-  email,
-  companyName,
-  recruiter,
-  jobs,
-  status = "APPROVED",
-  ...details
-}: (typeof demoCompanies)[number]) {
-  const user = await upsertUser({ email, password: "Company@123", role: "RECRUITER" });
+// Collected while seeding and written at the end, oldest first.
+const audit: AuditEntry[] = [];
 
-  const [existingMember] = await db
-    .select()
-    .from(companyUsers)
-    .where(eq(companyUsers.userId, user.id));
-  if (existingMember) return;
+async function seedCompany(company: DemoCompany, tpoId: string, created: DriveRow[]) {
+  const { email, name, recruiter, drives: demoDrives, status = "APPROVED", reason, registeredDaysAgo, ...details } =
+    company;
+  const registeredAt = daysAgo(registeredDaysAgo);
+  const reviewedAt = status === "PENDING" ? null : daysAgo(registeredDaysAgo - 2);
+  const user = await createUser(email, "Company@123", "RECRUITER", registeredAt);
 
-  const [company] = await db
+  const [row] = await db
     .insert(companies)
     .values({
       ...details,
-      name: companyName,
+      name,
       domain: domainFromWebsite(details.website)!,
       status,
-      reviewedAt: status === "APPROVED" ? new Date() : null,
+      rejectionReason: reason ?? null,
+      reviewedBy: reviewedAt ? tpoId : null,
+      reviewedAt,
+      createdAt: registeredAt,
+      updatedAt: reviewedAt ?? registeredAt,
     })
     .returning();
-  await db
-    .insert(companyUsers)
-    .values({ userId: user.id, companyId: company.id, ...recruiter, isAdmin: true });
-  console.log(`  + created ${status.toLowerCase()} company ${companyName}`);
+  await db.insert(companyUsers).values({ userId: user.id, companyId: row.id, ...recruiter, isAdmin: true, createdAt: registeredAt });
 
-  for (const [index, job] of jobs.entries()) {
-    const ctc = job.salaryPackage.match(/^([\d.]+) LPA$/);
+  if (reviewedAt) {
+    const decision = status === "REJECTED" ? "REJECTED" : "APPROVED";
+    audit.push({
+      actorId: tpoId,
+      action: decision === "APPROVED" ? "company.approved" : "company.rejected",
+      entity: "company",
+      entityId: row.id,
+      before: { status: "PENDING", rejectionReason: null },
+      after: { status: decision, rejectionReason: decision === "REJECTED" ? reason : null },
+      at: reviewedAt,
+    });
+  }
+  if (status === "SUSPENDED") {
+    audit.push({
+      actorId: tpoId,
+      action: "company.suspended",
+      entity: "company",
+      entityId: row.id,
+      before: { status: "APPROVED", rejectionReason: null },
+      after: { status: "SUSPENDED", rejectionReason: reason },
+      at: daysAgo(5),
+    });
+  }
+
+  for (const demo of demoDrives) {
+    const driveStatus = demo.status ?? "OPEN";
+    const deadline = new Date(Date.now() + demo.deadlineInDays * DAY);
+    // Drives open about three weeks before their deadline, never before the company was approved.
+    const openedAt = new Date(
+      Math.min(Date.now() - DAY, Math.max(reviewedAt?.getTime() ?? 0, deadline.getTime() - 21 * DAY))
+    );
+    const proposedByCompany = random() < 0.6 || driveStatus === "PENDING_APPROVAL" || driveStatus === "DRAFT";
+    const approved = !["DRAFT", "PENDING_APPROVAL"].includes(driveStatus);
+
     const [drive] = await db
       .insert(drives)
       .values({
-        companyId: company.id,
-        title: job.title,
-        type: ctc ? "FULL_TIME" : "INTERNSHIP",
-        ctcLpa: ctc ? Number(ctc[1]) : null,
-        stipend: ctc ? null : job.salaryPackage,
-        location: job.location,
-        description: job.description,
-        // Staggered deadlines two to four weeks out.
-        deadline: new Date(Date.now() + (14 + index * 7) * DAY),
-        status: "OPEN",
-        approvedAt: new Date(),
+        companyId: row.id,
+        title: demo.title,
+        type: demo.type ?? (demo.ctcLpa ? "FULL_TIME" : "INTERNSHIP"),
+        ctcLpa: demo.ctcLpa ?? null,
+        stipend: demo.stipend ?? null,
+        location: demo.location,
+        description: demo.description,
+        bondDetails: demo.bondDetails ?? null,
+        deadline,
+        status: driveStatus,
+        createdBy: proposedByCompany ? user.id : tpoId,
+        approvedBy: approved ? tpoId : null,
+        approvedAt: approved ? openedAt : null,
+        createdAt: new Date(openedAt.getTime() - DAY),
+        updatedAt: openedAt,
       })
-      .returning({ id: drives.id });
-    await db.insert(eligibilityCriteria).values({
-      driveId: drive.id,
-      minCgpa: job.minCgpa ?? null,
-      branches: job.allowedBranches ?? [],
-      maxBacklogs: job.maxBacklogs ?? null,
-    });
+      .returning();
+    const [criteria] = await db
+      .insert(eligibilityCriteria)
+      .values({
+        driveId: drive.id,
+        minCgpa: demo.minCgpa ?? null,
+        branches: demo.branches ?? [],
+        batch: demo.batch ?? null,
+        maxBacklogs: demo.maxBacklogs ?? null,
+        min10: demo.min10 ?? null,
+        min12: demo.min12 ?? null,
+      })
+      .returning();
+    created.push({ ...drive, criteria });
+
+    if (!proposedByCompany) {
+      audit.push({
+        actorId: tpoId,
+        action: "drive.created",
+        entity: "drive",
+        entityId: drive.id,
+        before: null,
+        after: { status: "OPEN", title: drive.title },
+        at: openedAt,
+      });
+    } else if (approved) {
+      audit.push({
+        actorId: tpoId,
+        action: "drive.approved",
+        entity: "drive",
+        entityId: drive.id,
+        before: { status: "PENDING_APPROVAL" },
+        after: { status: "OPEN" },
+        at: openedAt,
+      });
+    }
+    if (driveStatus === "CLOSED" || driveStatus === "COMPLETED") {
+      audit.push({
+        actorId: tpoId,
+        action: "drive.closed",
+        entity: "drive",
+        entityId: drive.id,
+        before: { status: "OPEN" },
+        after: { status: "CLOSED" },
+        at: new Date(deadline.getTime() + DAY / 2),
+      });
+    }
+    if (driveStatus === "COMPLETED") {
+      audit.push({
+        actorId: tpoId,
+        action: "drive.completed",
+        entity: "drive",
+        entityId: drive.id,
+        before: { status: "CLOSED" },
+        after: { status: "COMPLETED" },
+        at: new Date(deadline.getTime() + 10 * DAY),
+      });
+    }
   }
-  if (jobs.length > 0) console.log(`  + added ${jobs.length} open drive(s) for ${companyName}`);
+  return name;
 }
 
-// Students in each verification state, so every TPO screen has something to show.
-const demoStudents = [
-  {
-    email: "student@brainware.edu",
-    name: "Demo Student",
-    status: "VERIFIED" as const,
-    profile: {
-      rollNumber: "BWU/BTECH/23/001",
-      branch: "CSE",
-      batch: 2027,
-      cgpa: 8.2,
-      activeBacklogs: 0,
-      marks10: 88,
-      marks12: 82,
-      phone: "9876543210",
-      skills: ["Java", "SQL", "React"],
-    },
-  },
-  {
-    email: "riya.student@brainware.edu",
-    name: "Riya Chatterjee",
-    status: "SUBMITTED" as const,
-    profile: {
-      rollNumber: "BWU/BTECH/23/014",
-      branch: "ECE",
-      batch: 2027,
-      cgpa: 7.4,
-      activeBacklogs: 1,
-      marks10: 81,
-      marks12: 76,
-      phone: "9876500014",
-      skills: ["Embedded C", "MATLAB"],
-    },
-  },
-  { email: "new.student@brainware.edu", name: "Arnab Ghosh", status: "DRAFT" as const, profile: {} },
-];
-
 async function main() {
-  console.log("Seeding default users...");
-  const [, tpo, student] = await Promise.all(defaultUsers.map(upsertUser));
+  const [{ value: existing }] = await db.select({ value: count() }).from(users);
+  if (existing > 0) {
+    console.log("The database already has data. Run `npm run db:reset` to wipe it and seed again.");
+    return;
+  }
 
+  console.log("Seeding staff accounts...");
+  const [admin, tpo] = await Promise.all(
+    defaultUsers.map(({ email, password, role }) => createUser(email, password, role, daysAgo(90)))
+  );
   await db
     .insert(tpoProfiles)
-    .values({ userId: tpo.id, name: "Placement Officer", designation: "Training & Placement Officer" })
-    .onConflictDoNothing();
-
-  console.log("\nSeeding demo students...");
-  for (const demo of demoStudents) {
-    const user =
-      demo.email === student.email
-        ? student
-        : await upsertUser({ email: demo.email, password: "Student@123", role: "STUDENT" });
+    .values({ userId: tpo.id, name: "Placement Officer", designation: "Training & Placement Officer", createdBy: admin.id, createdAt: daysAgo(90) });
+  audit.push({ actorId: admin.id, action: "tpo.created", entity: "user", entityId: tpo.id, before: null, after: { email: tpo.email }, at: daysAgo(90) });
+  const reviewers = [tpo.id];
+  for (const extra of extraTpos) {
+    const user = await createUser(extra.email, "Tpo@123", "TPO", daysAgo(70));
     await db
+      .insert(tpoProfiles)
+      .values({ userId: user.id, name: extra.name, designation: extra.designation, createdBy: admin.id, createdAt: daysAgo(70) });
+    audit.push({ actorId: admin.id, action: "tpo.created", entity: "user", entityId: user.id, before: null, after: { email: user.email }, at: daysAgo(70) });
+    reviewers.push(user.id);
+  }
+
+  console.log("Seeding companies and drives...");
+  const allDrives: DriveRow[] = [];
+  for (const company of demoCompanies) await seedCompany(company, pick(reviewers), allDrives);
+
+  console.log("Seeding students...");
+  const verified: (typeof students.$inferSelect)[] = [];
+  for (const demo of demoStudents) {
+    const registeredAt = daysAgo(demo.registeredDaysAgo);
+    const reviewedAt = demo.status === "VERIFIED" || demo.status === "REJECTED" ? daysAgo(Math.max(0.5, demo.registeredDaysAgo - 3)) : null;
+    const user = await createUser(demo.email, "Student@123", "STUDENT", registeredAt);
+    const [student] = await db
       .insert(students)
       .values({
         userId: user.id,
         name: demo.name,
         ...demo.profile,
         verificationStatus: demo.status,
-        verifiedAt: demo.status === "VERIFIED" ? new Date() : null,
+        verificationNote: demo.note ?? null,
         verifiedBy: demo.status === "VERIFIED" ? tpo.id : null,
+        verifiedAt: demo.status === "VERIFIED" ? reviewedAt : null,
+        createdAt: registeredAt,
+        updatedAt: reviewedAt ?? registeredAt,
       })
-      .onConflictDoNothing();
+      .returning();
+
+    if (demo.status === "VERIFIED") {
+      verified.push(student);
+      audit.push({
+        actorId: tpo.id,
+        action: "student.verified",
+        entity: "student",
+        entityId: student.id,
+        before: { verificationStatus: "SUBMITTED" },
+        after: {
+          verificationStatus: "VERIFIED",
+          ...Object.fromEntries(Object.keys(academicFields).map((f) => [f, student[f as keyof typeof academicFields]])),
+        },
+        at: reviewedAt!,
+      });
+    } else if (demo.status === "REJECTED") {
+      audit.push({
+        actorId: tpo.id,
+        action: "student.rejected",
+        entity: "student",
+        entityId: student.id,
+        before: { verificationStatus: "SUBMITTED" },
+        after: { verificationStatus: "REJECTED", reason: demo.note },
+        at: reviewedAt!,
+      });
+    }
   }
 
-  console.log("\nSeeding demo companies...");
-  for (const company of demoCompanies) await seedCompany(company);
+  console.log("Seeding correction requests...");
+  const candidates = verified.filter((s) => s.userId !== verified[0]?.userId);
+  for (const [index, correction] of demoCorrections.entries()) {
+    // The backlog request only makes sense for a student who has one.
+    const student =
+      correction.field === "activeBacklogs"
+        ? candidates.find((s) => (s.activeBacklogs ?? 0) > 0)
+        : candidates[index * 3];
+    if (!student) continue;
+    const current = Number(student[correction.field] ?? 0);
+    const requestedValue = correction.requested(current);
+    const createdAt = daysAgo(4 - index * 0.5);
+    const reviewedAt = correction.status === "PENDING" ? null : daysAgo(1);
+    const [request] = await db
+      .insert(correctionRequests)
+      .values({
+        studentId: student.id,
+        field: correction.field,
+        currentValue: String(current),
+        requestedValue,
+        reason: correction.reason,
+        status: correction.status,
+        reviewNote: "note" in correction ? correction.note : null,
+        reviewedBy: reviewedAt ? tpo.id : null,
+        reviewedAt,
+        createdAt,
+      })
+      .returning();
+    if (correction.status === "APPROVED") {
+      await db.update(students).set({ [correction.field]: Number(requestedValue) }).where(eq(students.id, student.id));
+    }
+    if (reviewedAt) {
+      const approve = correction.status === "APPROVED";
+      audit.push({
+        actorId: tpo.id,
+        action: approve ? "student.academic_corrected" : "student.correction_declined",
+        entity: "student",
+        entityId: student.id,
+        before: { [correction.field]: String(current) },
+        after: approve
+          ? { [correction.field]: Number(requestedValue), requestId: request.id }
+          : { requestId: request.id, note: request.reviewNote },
+        at: reviewedAt,
+      });
+    }
+  }
 
-  console.log("\nDefault logins:");
-  console.table(
-    defaultUsers.map(({ role, email, password }) => ({ role, email, password }))
-  );
-  console.log("\nDemo students (password Student@123):");
-  console.table(demoStudents.map(({ email, name, status }) => ({ email, name, status })));
-  console.log("\nDemo recruiters (password Company@123):");
-  console.table(
-    demoCompanies.map(({ email, companyName, status = "APPROVED" }) => ({
-      email,
-      companyName,
-      status,
-    }))
-  );
+  console.log("Seeding applications...");
+  const takesApplications = allDrives.filter((d) => ["OPEN", "CLOSED", "COMPLETED"].includes(d.status));
+  const rows: (typeof applications.$inferInsert)[] = [];
+  for (const student of verified) {
+    for (const drive of takesApplications) {
+      if (eligibilityIssues(student, drive.criteria).length > 0) continue;
+      if (random() > 0.55) continue;
+
+      const opened = drive.approvedAt!.getTime();
+      const closes = Math.min(drive.deadline.getTime(), Date.now());
+      const appliedAt = new Date(Math.max(opened, student.verifiedAt!.getTime(), between(opened, closes)));
+      const roll = random();
+      let status: (typeof applications.$inferInsert)["status"] = "APPLIED";
+      if (drive.status === "OPEN") status = roll < 0.08 ? "WITHDRAWN" : "APPLIED";
+      if (drive.status === "CLOSED") status = roll < 0.4 ? "SHORTLISTED" : roll < 0.6 ? "IN_PROCESS" : "REJECTED";
+      if (drive.status === "COMPLETED") status = roll < 0.25 ? "SELECTED" : "REJECTED";
+
+      rows.push({
+        studentId: student.id,
+        driveId: drive.id,
+        status,
+        appliedAt,
+        withdrawnAt: status === "WITHDRAWN" ? new Date(appliedAt.getTime() + DAY) : null,
+        updatedAt: appliedAt,
+      });
+    }
+  }
+  if (rows.length > 0) await db.insert(applications).values(rows);
+
+  audit.sort((a, b) => a.at!.getTime() - b.at!.getTime());
+  await db.insert(auditLogs).values(audit);
+
+  const studentsWith = (status: string) => demoStudents.filter((s) => s.status === status).length;
+  console.log("\nDone.");
+  console.table({
+    companies: demoCompanies.length,
+    drives: allDrives.length,
+    students: demoStudents.length,
+    verified: studentsWith("VERIFIED"),
+    awaitingVerification: studentsWith("SUBMITTED"),
+    sentBack: studentsWith("REJECTED"),
+    incomplete: studentsWith("DRAFT"),
+    applications: rows.length,
+    auditEntries: audit.length,
+  });
+
+  console.log("\nStaff logins:");
+  console.table([
+    ...defaultUsers.map(({ role, email, password }) => ({ role, email, password })),
+    ...extraTpos.map(({ email }) => ({ role: "TPO", email, password: "Tpo@123" })),
+  ]);
+  console.log("\nEvery student's password is Student@123, e.g. student@brainware.edu.");
+  console.log("Every recruiter's password is Company@123:");
+  console.table(demoCompanies.map(({ email, name, status = "APPROVED" }) => ({ email, company: name, status })));
 }
 
 main()
