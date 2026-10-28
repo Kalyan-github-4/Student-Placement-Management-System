@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Building2, ChevronRight, LogIn } from "lucide-react";
+import { Building2, ChevronRight, GraduationCap, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -19,6 +19,13 @@ const options = [
     description: "Students, recruiters and placement cell staff use the same sign-in.",
     icon: LogIn,
     iconClass: "bg-[#174A91]/10 text-[#174A91]",
+  },
+  {
+    href: "/register/student",
+    title: "Register as a student",
+    description: "Create your account, complete your profile and get verified.",
+    icon: GraduationCap,
+    iconClass: "bg-[#082B63]/10 text-[#082B63]",
   },
   {
     href: "/register/company",
@@ -47,7 +54,7 @@ export function SignInButton({
             Welcome
           </DialogTitle>
           <DialogDescription className="text-[#526987]">
-            Sign in to your account, or register your company to recruit.
+            Sign in to your account, or create one.
           </DialogDescription>
         </DialogHeader>
 
@@ -79,9 +86,6 @@ export function SignInButton({
           ))}
         </div>
 
-        <p className="text-center text-sm text-[#526987]">
-          Students are added by the placement cell and receive an activation email.
-        </p>
       </DialogContent>
     </Dialog>
   );

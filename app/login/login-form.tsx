@@ -79,6 +79,15 @@ export function LoginForm() {
       </button>
 
       <p className="text-center text-sm text-[#526987]">
+        New student?{" "}
+        <Link
+          href="/register/student"
+          className="font-semibold text-[#174A91] underline-offset-4 hover:underline"
+        >
+          Create an account
+        </Link>
+      </p>
+      <p className="-mt-2 text-center text-sm text-[#526987]">
         Recruiting for a company?{" "}
         <Link
           href="/register/company"

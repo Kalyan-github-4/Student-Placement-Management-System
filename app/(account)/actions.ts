@@ -13,11 +13,12 @@ import { consumeAuthToken, createAuthToken } from "@/lib/tokens";
 
 const HOUR = 60 * 60 * 1000;
 
-// Email ownership is what activates a recruiter. Students also need TPO verification,
-// so their status is left for the TPO to change.
+// Email ownership is what activates a self-registered account. Recruiters still wait
+// for company approval, and students for profile verification, but those gates live
+// on the company and student records, not on the login.
 const verifiedFields = {
   emailVerified: sql`coalesce(${users.emailVerified}, now())`,
-  status: sql`case when ${users.role} = 'RECRUITER' and ${users.status} = 'PENDING' then 'ACTIVE' else ${users.status} end`,
+  status: sql`case when ${users.role} in ('RECRUITER', 'STUDENT') and ${users.status} = 'PENDING' then 'ACTIVE' else ${users.status} end`,
 };
 
 export async function verifyEmail(token: string): Promise<FormState> {
