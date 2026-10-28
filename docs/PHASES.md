@@ -25,20 +25,30 @@ Done when: **a company can register and be approved by the TPO.**
 
 Deferred to Phase 2 (needs file storage): company logo and authorization letter uploads.
 
-## Phase 2: Core cycle (MVP)
+## Phase 2: Core cycle (MVP) ✅
+
+Status: complete (2026-10-27). Verified end to end against a production build, except real Cloudinary uploads, which need `CLOUDINARY_URL`.
 
 Done when: **an eligible student can apply to an approved company's drive.**
 
-- File storage for resumes, logos and documents (private, served through short-lived signed URLs)
-- Students table per PRD (batch, 10th / 12th marks, skills, links, `verified_by`)
-- TPO bulk CSV import with row-level validation before saving; activation emails
-- Student self-signup with the college email domain, pending until TPO verifies
-- Academic fields locked for students; correction requests approved by the TPO
-- Resume upload (PDF, 2 MB) with a default resume
-- Drives replace job postings: full fields, `DRAFT` / `PENDING_APPROVAL` / `OPEN` / `CLOSED` / `COMPLETED`, created by TPO or proposed by a company
-- `eligibility_criteria` (min CGPA, branches, batch, max backlogs, min 10th / 12th), enforced when listing and when applying
-- Applications with the PRD statuses, apply with a chosen resume, withdraw before the deadline, applicant CSV export
-- Emails: new eligible drive, application events
+Decisions made for this phase (they change the PRD):
+
+- Students **register themselves** with name, email and password (any email domain for now; `STUDENT_EMAIL_DOMAIN` restricts it). TPO CSV import is dropped for now.
+- Students fill in their own profile, including academic details. The **TPO verifies** the profile before the student can see or apply to drives; after that, academic fields lock and change only through correction requests.
+- File storage is **Cloudinary** for now, behind `lib/storage.ts` so it can be swapped later.
+
+Built:
+
+- Student signup, email verification, profile with completeness indicator, submit for verification
+- TPO verification queue: verify or send back with a reason (emailed), audit log snapshot of what was verified
+- Correction requests for locked fields, approved or declined by the TPO (audited)
+- Resume upload (PDF, 2 MB, up to 5, one default), checked by file signature; files are private and served through `/files/[id]` after an access check, as 5-minute signed links
+- Company logo (public) and authorization letter (private) uploads
+- Drives replace job postings: full fields, `DRAFT` / `PENDING_APPROVAL` / `OPEN` / `CLOSED` / `COMPLETED`; created by the TPO or proposed by a company and approved by the TPO
+- `eligibility_criteria` (min CGPA, branches, batch, max backlogs, min 10th / 12th), enforced when listing and again when applying
+- Students only see drives they're eligible for; apply with a chosen resume, withdraw before the deadline
+- Applicant lists and CSV export for the company (no phone numbers) and the TPO (with phone numbers)
+- Emails: profile verified / sent back, correction decision, drive approved / sent back, new eligible drive (sent after the response), application received
 
 ## Phase 3: Selection
 
