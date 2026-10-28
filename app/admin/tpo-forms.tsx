@@ -58,11 +58,11 @@ export function TpoRowActions({
   canResend: boolean;
 }) {
   const [accessState, accessAction, accessPending] = useActionState(
-    () => setTpoAccess(userId, suspended),
+    setTpoAccess.bind(null, userId, suspended),
     undefined
   );
   const [resendState, resendAction, resendPending] = useActionState(
-    () => resendTpoActivation(userId),
+    resendTpoActivation.bind(null, userId),
     undefined
   );
   const message = resendState?.message ?? accessState?.message;
