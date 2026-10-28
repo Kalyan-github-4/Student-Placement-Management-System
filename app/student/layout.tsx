@@ -3,7 +3,7 @@ import { PortalShell } from "@/components/portal/portal-shell";
 const nav = [
   { href: "/student", label: "Overview" },
   { href: "/student/profile", label: "My Profile" },
-  { href: "/student/companies", label: "Companies" },
+  { href: "/student/drives", label: "Drives" },
   { href: "/student/applications", label: "My Applications" },
 ];
 
