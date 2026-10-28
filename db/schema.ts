@@ -21,27 +21,40 @@ export const companyStatusEnum = pgEnum("company_status", [
   "REJECTED",
   "SUSPENDED",
 ]);
-export const approvalStatusEnum = pgEnum("approval_status", [
-  "PENDING",
-  "APPROVED",
-  "REJECTED",
-]);
-export const applicationStatusEnum = pgEnum("application_status", [
-  "APPLIED",
-  "SHORTLISTED",
-  "REJECTED",
-  "HIRED",
-]);
 export const tokenTypeEnum = pgEnum("token_type", [
   "EMAIL_VERIFICATION",
   "PASSWORD_RESET",
   "ACCOUNT_ACTIVATION",
 ]);
+export const verificationStatusEnum = pgEnum("verification_status", [
+  "DRAFT",
+  "SUBMITTED",
+  "VERIFIED",
+  "REJECTED",
+]);
+export const reviewStatusEnum = pgEnum("review_status", ["PENDING", "APPROVED", "REJECTED"]);
+export const documentTypeEnum = pgEnum("document_type", ["RESUME", "LOGO", "AUTH_LETTER"]);
+export const driveTypeEnum = pgEnum("drive_type", ["FULL_TIME", "INTERNSHIP", "BOTH"]);
+export const driveStatusEnum = pgEnum("drive_status", [
+  "DRAFT",
+  "PENDING_APPROVAL",
+  "OPEN",
+  "CLOSED",
+  "COMPLETED",
+]);
+export const applicationStatusEnum = pgEnum("application_status", [
+  "APPLIED",
+  "SHORTLISTED",
+  "IN_PROCESS",
+  "SELECTED",
+  "REJECTED",
+  "WITHDRAWN",
+]);
 
 export const users = pgTable("users", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
   email: text("email").notNull().unique(),
-  // Null until an invited or imported user sets a password via their activation link.
+  // Null until an invited user sets a password via their activation link.
   passwordHash: text("password_hash"),
   role: roleEnum("role").notNull(),
   status: userStatusEnum("status").notNull().default("PENDING"),
@@ -86,22 +99,55 @@ export const tpoProfiles = pgTable("tpo_profiles", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const studentProfiles = pgTable("student_profiles", {
+// Academic fields stay null until the student fills them in. They lock once the TPO
+// verifies the profile; after that they change only through a correction request.
+export const students = pgTable("students", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
   userId: text("user_id")
     .notNull()
     .unique()
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
-  rollNumber: text("roll_number").notNull().unique(),
-  branch: text("branch").notNull(),
-  cgpa: doublePrecision("cgpa").notNull(),
-  backlogs: integer("backlogs").notNull().default(0),
+  rollNumber: text("roll_number").unique(),
+  branch: text("branch"),
+  batch: integer("batch"),
+  cgpa: doublePrecision("cgpa"),
+  activeBacklogs: integer("active_backlogs"),
+  marks10: doublePrecision("marks_10"),
+  marks12: doublePrecision("marks_12"),
   phone: text("phone"),
-  resumeUrl: text("resume_url"),
+  skills: text("skills").array().notNull().default([]),
+  githubUrl: text("github_url"),
+  linkedinUrl: text("linkedin_url"),
+  portfolioUrl: text("portfolio_url"),
+  verificationStatus: verificationStatusEnum("verification_status").notNull().default("DRAFT"),
+  verificationNote: text("verification_note"),
+  verifiedBy: text("verified_by").references(() => users.id, { onDelete: "set null" }),
+  verifiedAt: timestamp("verified_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+// A student's request to change a locked academic field, decided by the TPO.
+export const correctionRequests = pgTable(
+  "correction_requests",
+  {
+    id: text("id").primaryKey().$defaultFn(() => createId()),
+    studentId: text("student_id")
+      .notNull()
+      .references(() => students.id, { onDelete: "cascade" }),
+    field: text("field").notNull(),
+    currentValue: text("current_value"),
+    requestedValue: text("requested_value").notNull(),
+    reason: text("reason").notNull(),
+    status: reviewStatusEnum("status").notNull().default("PENDING"),
+    reviewNote: text("review_note"),
+    reviewedBy: text("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+    reviewedAt: timestamp("reviewed_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [index("correction_requests_student_idx").on(table.studentId)]
+);
 
 export const companies = pgTable("companies", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
@@ -119,6 +165,7 @@ export const companies = pgTable("companies", {
   hiringRoles: text("hiring_roles"),
   hiringCtc: text("hiring_ctc"),
   hiringBatch: text("hiring_batch"),
+  logoUrl: text("logo_url"),
   status: companyStatusEnum("status").notNull().default("PENDING"),
   rejectionReason: text("rejection_reason"),
   reviewedBy: text("reviewed_by").references(() => users.id, { onDelete: "set null" }),
@@ -157,22 +204,64 @@ export const companyInvites = pgTable("company_invites", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const jobPostings = pgTable("job_postings", {
-  id: text("id").primaryKey().$defaultFn(() => createId()),
-  companyId: text("company_id")
-    .notNull()
-    .references(() => companies.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
+// Uploaded files. `storageKey` is the provider's id; files are private and served
+// only through /files/[id], which checks access and redirects to a short-lived URL.
+export const documents = pgTable(
+  "documents",
+  {
+    id: text("id").primaryKey().$defaultFn(() => createId()),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: documentTypeEnum("type").notNull(),
+    storageKey: text("storage_key").notNull(),
+    fileName: text("file_name").notNull(),
+    mimeType: text("mime_type").notNull(),
+    size: integer("size").notNull(),
+    isDefault: boolean("is_default").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [index("documents_owner_idx").on(table.ownerId)]
+);
+
+export const drives = pgTable(
+  "drives",
+  {
+    id: text("id").primaryKey().$defaultFn(() => createId()),
+    companyId: text("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    type: driveTypeEnum("type").notNull(),
+    // Annual CTC in lakhs per annum, null for internship-only drives.
+    ctcLpa: doublePrecision("ctc_lpa"),
+    stipend: text("stipend"),
+    location: text("location").notNull(),
+    description: text("description").notNull(),
+    bondDetails: text("bond_details"),
+    deadline: timestamp("deadline").notNull(),
+    status: driveStatusEnum("status").notNull().default("DRAFT"),
+    rejectionReason: text("rejection_reason"),
+    createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
+    approvedBy: text("approved_by").references(() => users.id, { onDelete: "set null" }),
+    approvedAt: timestamp("approved_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [index("drives_company_idx").on(table.companyId), index("drives_status_idx").on(table.status)]
+);
+
+// Null or empty means "no restriction" for that rule.
+export const eligibilityCriteria = pgTable("eligibility_criteria", {
+  driveId: text("drive_id")
+    .primaryKey()
+    .references(() => drives.id, { onDelete: "cascade" }),
   minCgpa: doublePrecision("min_cgpa"),
-  allowedBranches: text("allowed_branches").array().notNull().default([]),
+  branches: text("branches").array().notNull().default([]),
+  batch: integer("batch"),
   maxBacklogs: integer("max_backlogs"),
-  salaryPackage: text("salary_package"),
-  location: text("location"),
-  status: approvalStatusEnum("status").notNull().default("PENDING"),
-  rejectionReason: text("rejection_reason"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  min10: doublePrecision("min_10"),
+  min12: doublePrecision("min_12"),
 });
 
 export const applications = pgTable(
@@ -181,15 +270,20 @@ export const applications = pgTable(
     id: text("id").primaryKey().$defaultFn(() => createId()),
     studentId: text("student_id")
       .notNull()
-      .references(() => studentProfiles.id, { onDelete: "cascade" }),
-    jobId: text("job_id")
+      .references(() => students.id, { onDelete: "cascade" }),
+    driveId: text("drive_id")
       .notNull()
-      .references(() => jobPostings.id, { onDelete: "cascade" }),
+      .references(() => drives.id, { onDelete: "cascade" }),
+    resumeId: text("resume_id").references(() => documents.id, { onDelete: "set null" }),
     status: applicationStatusEnum("status").notNull().default("APPLIED"),
     appliedAt: timestamp("applied_at").notNull().defaultNow(),
+    withdrawnAt: timestamp("withdrawn_at"),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
-  (table) => [uniqueIndex("applications_student_job_idx").on(table.studentId, table.jobId)]
+  (table) => [
+    uniqueIndex("applications_student_drive_idx").on(table.studentId, table.driveId),
+    index("applications_drive_idx").on(table.driveId),
+  ]
 );
 
 // Append-only record of admin and TPO changes. Never updated or deleted by the app.
@@ -208,33 +302,30 @@ export const auditLogs = pgTable(
   (table) => [index("audit_logs_entity_idx").on(table.entity, table.entityId)]
 );
 
-export const usersRelations = relations(users, ({ one }) => ({
-  studentProfile: one(studentProfiles, {
-    fields: [users.id],
-    references: [studentProfiles.userId],
-  }),
-  companyUser: one(companyUsers, {
-    fields: [users.id],
-    references: [companyUsers.userId],
-  }),
-  tpoProfile: one(tpoProfiles, {
-    fields: [users.id],
-    references: [tpoProfiles.userId],
-  }),
+export const usersRelations = relations(users, ({ one, many }) => ({
+  student: one(students, { fields: [users.id], references: [students.userId] }),
+  companyUser: one(companyUsers, { fields: [users.id], references: [companyUsers.userId] }),
+  tpoProfile: one(tpoProfiles, { fields: [users.id], references: [tpoProfiles.userId] }),
+  documents: many(documents),
 }));
 
 export const tpoProfilesRelations = relations(tpoProfiles, ({ one }) => ({
   user: one(users, { fields: [tpoProfiles.userId], references: [users.id] }),
 }));
 
-export const studentProfilesRelations = relations(studentProfiles, ({ one, many }) => ({
-  user: one(users, { fields: [studentProfiles.userId], references: [users.id] }),
+export const studentsRelations = relations(students, ({ one, many }) => ({
+  user: one(users, { fields: [students.userId], references: [users.id] }),
   applications: many(applications),
+  corrections: many(correctionRequests),
+}));
+
+export const correctionRequestsRelations = relations(correctionRequests, ({ one }) => ({
+  student: one(students, { fields: [correctionRequests.studentId], references: [students.id] }),
 }));
 
 export const companiesRelations = relations(companies, ({ many }) => ({
   members: many(companyUsers),
-  jobPostings: many(jobPostings),
+  drives: many(drives),
 }));
 
 export const companyUsersRelations = relations(companyUsers, ({ one }) => ({
@@ -242,18 +333,25 @@ export const companyUsersRelations = relations(companyUsers, ({ one }) => ({
   company: one(companies, { fields: [companyUsers.companyId], references: [companies.id] }),
 }));
 
-export const jobPostingsRelations = relations(jobPostings, ({ one, many }) => ({
-  company: one(companies, {
-    fields: [jobPostings.companyId],
-    references: [companies.id],
+export const documentsRelations = relations(documents, ({ one }) => ({
+  owner: one(users, { fields: [documents.ownerId], references: [users.id] }),
+}));
+
+export const drivesRelations = relations(drives, ({ one, many }) => ({
+  company: one(companies, { fields: [drives.companyId], references: [companies.id] }),
+  criteria: one(eligibilityCriteria, {
+    fields: [drives.id],
+    references: [eligibilityCriteria.driveId],
   }),
   applications: many(applications),
 }));
 
+export const eligibilityCriteriaRelations = relations(eligibilityCriteria, ({ one }) => ({
+  drive: one(drives, { fields: [eligibilityCriteria.driveId], references: [drives.id] }),
+}));
+
 export const applicationsRelations = relations(applications, ({ one }) => ({
-  student: one(studentProfiles, {
-    fields: [applications.studentId],
-    references: [studentProfiles.id],
-  }),
-  job: one(jobPostings, { fields: [applications.jobId], references: [jobPostings.id] }),
+  student: one(students, { fields: [applications.studentId], references: [students.id] }),
+  drive: one(drives, { fields: [applications.driveId], references: [drives.id] }),
+  resume: one(documents, { fields: [applications.resumeId], references: [documents.id] }),
 }));

@@ -4,11 +4,12 @@ import { db } from "./index";
 import { domainFromWebsite } from "../lib/company";
 import {
   users,
-  studentProfiles,
+  students,
   companies,
   companyUsers,
   tpoProfiles,
-  jobPostings,
+  drives,
+  eligibilityCriteria,
 } from "./schema";
 
 const defaultUsers = [
@@ -34,7 +35,18 @@ const defaultUsers = [
   },
 ];
 
-type DemoJob = Omit<typeof jobPostings.$inferInsert, "companyId" | "status">;
+// Demo openings; each becomes an OPEN drive with its eligibility rules.
+type DemoJob = {
+  title: string;
+  description: string;
+  minCgpa?: number;
+  allowedBranches?: string[];
+  maxBacklogs?: number;
+  salaryPackage: string;
+  location: string;
+};
+
+const DAY = 24 * 60 * 60 * 1000;
 
 // Fictional companies so the student portal has openings to browse.
 // Each gets a recruiter login: <email> / Company@123.
@@ -292,12 +304,70 @@ async function seedCompany({
     .values({ userId: user.id, companyId: company.id, ...recruiter, isAdmin: true });
   console.log(`  + created ${status.toLowerCase()} company ${companyName}`);
 
-  if (jobs.length === 0) return;
-  await db
-    .insert(jobPostings)
-    .values(jobs.map((job) => ({ ...job, companyId: company.id, status: "APPROVED" as const })));
-  console.log(`  + added ${jobs.length} opening(s) for ${companyName}`);
+  for (const [index, job] of jobs.entries()) {
+    const ctc = job.salaryPackage.match(/^([\d.]+) LPA$/);
+    const [drive] = await db
+      .insert(drives)
+      .values({
+        companyId: company.id,
+        title: job.title,
+        type: ctc ? "FULL_TIME" : "INTERNSHIP",
+        ctcLpa: ctc ? Number(ctc[1]) : null,
+        stipend: ctc ? null : job.salaryPackage,
+        location: job.location,
+        description: job.description,
+        // Staggered deadlines two to four weeks out.
+        deadline: new Date(Date.now() + (14 + index * 7) * DAY),
+        status: "OPEN",
+        approvedAt: new Date(),
+      })
+      .returning({ id: drives.id });
+    await db.insert(eligibilityCriteria).values({
+      driveId: drive.id,
+      minCgpa: job.minCgpa ?? null,
+      branches: job.allowedBranches ?? [],
+      maxBacklogs: job.maxBacklogs ?? null,
+    });
+  }
+  if (jobs.length > 0) console.log(`  + added ${jobs.length} open drive(s) for ${companyName}`);
 }
+
+// Students in each verification state, so every TPO screen has something to show.
+const demoStudents = [
+  {
+    email: "student@brainware.edu",
+    name: "Demo Student",
+    status: "VERIFIED" as const,
+    profile: {
+      rollNumber: "BWU/BTECH/23/001",
+      branch: "CSE",
+      batch: 2027,
+      cgpa: 8.2,
+      activeBacklogs: 0,
+      marks10: 88,
+      marks12: 82,
+      phone: "9876543210",
+      skills: ["Java", "SQL", "React"],
+    },
+  },
+  {
+    email: "riya.student@brainware.edu",
+    name: "Riya Chatterjee",
+    status: "SUBMITTED" as const,
+    profile: {
+      rollNumber: "BWU/BTECH/23/014",
+      branch: "ECE",
+      batch: 2027,
+      cgpa: 7.4,
+      activeBacklogs: 1,
+      marks10: 81,
+      marks12: 76,
+      phone: "9876500014",
+      skills: ["Embedded C", "MATLAB"],
+    },
+  },
+  { email: "new.student@brainware.edu", name: "Arnab Ghosh", status: "DRAFT" as const, profile: {} },
+];
 
 async function main() {
   console.log("Seeding default users...");
@@ -308,18 +378,24 @@ async function main() {
     .values({ userId: tpo.id, name: "Placement Officer", designation: "Training & Placement Officer" })
     .onConflictDoNothing();
 
-  await db
-    .insert(studentProfiles)
-    .values({
-      userId: student.id,
-      name: "Demo Student",
-      rollNumber: "BWU/BTECH/22/001",
-      branch: "CSE",
-      cgpa: 8.2,
-      backlogs: 0,
-      phone: "9876543210",
-    })
-    .onConflictDoNothing();
+  console.log("\nSeeding demo students...");
+  for (const demo of demoStudents) {
+    const user =
+      demo.email === student.email
+        ? student
+        : await upsertUser({ email: demo.email, password: "Student@123", role: "STUDENT" });
+    await db
+      .insert(students)
+      .values({
+        userId: user.id,
+        name: demo.name,
+        ...demo.profile,
+        verificationStatus: demo.status,
+        verifiedAt: demo.status === "VERIFIED" ? new Date() : null,
+        verifiedBy: demo.status === "VERIFIED" ? tpo.id : null,
+      })
+      .onConflictDoNothing();
+  }
 
   console.log("\nSeeding demo companies...");
   for (const company of demoCompanies) await seedCompany(company);
@@ -328,6 +404,8 @@ async function main() {
   console.table(
     defaultUsers.map(({ role, email, password }) => ({ role, email, password }))
   );
+  console.log("\nDemo students (password Student@123):");
+  console.table(demoStudents.map(({ email, name, status }) => ({ email, name, status })));
   console.log("\nDemo recruiters (password Company@123):");
   console.table(
     demoCompanies.map(({ email, companyName, status = "APPROVED" }) => ({
