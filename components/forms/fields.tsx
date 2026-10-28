@@ -98,6 +98,7 @@ export function SelectField({
   defaultValue,
   error,
   required,
+  disabled,
   className,
 }: {
   name: string;
@@ -107,13 +108,20 @@ export function SelectField({
   defaultValue?: string;
   error?: string;
   required?: boolean;
+  disabled?: boolean;
   className?: string;
 }) {
   const items = options.map((option) => ({ label: option, value: option }));
   return (
     <div className={cn("grid content-start gap-2", className)}>
       <FieldLabel htmlFor={name} label={label} />
-      <Select name={name} required={required} items={items} defaultValue={defaultValue || null}>
+      <Select
+        name={name}
+        required={required}
+        disabled={disabled}
+        items={items}
+        defaultValue={defaultValue || null}
+      >
         <SelectTrigger
           id={name}
           aria-invalid={!!error}

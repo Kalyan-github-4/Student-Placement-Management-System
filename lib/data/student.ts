@@ -1,63 +1,85 @@
 import "server-only";
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { applications, companies, jobPostings, studentProfiles } from "@/db/schema";
+import { applications, companies, correctionRequests, documents, drives, students } from "@/db/schema";
+import { eligibilityIssues } from "@/lib/eligibility";
 
-export async function getStudentProfile(userId: string) {
-  const [profile] = await db
+export type Student = typeof students.$inferSelect;
+
+export async function getStudent(userId: string) {
+  const [student] = await db.select().from(students).where(eq(students.userId, userId));
+  return student ?? null;
+}
+
+export async function getResumes(userId: string) {
+  return db
     .select()
-    .from(studentProfiles)
-    .where(eq(studentProfiles.userId, userId));
-  return profile ?? null;
+    .from(documents)
+    .where(and(eq(documents.ownerId, userId), eq(documents.type, "RESUME")))
+    .orderBy(desc(documents.isDefault), desc(documents.createdAt));
 }
 
-// Approved companies with their approved openings.
-export async function getOpenCompanies() {
-  const rows = await db.query.companies.findMany({
-    where: eq(companies.status, "APPROVED"),
-    orderBy: companies.name,
-    with: {
-      jobPostings: {
-        where: eq(jobPostings.status, "APPROVED"),
-        orderBy: desc(jobPostings.createdAt),
-      },
-    },
-  });
-  return rows.filter((company) => company.jobPostings.length > 0);
+export async function getCorrections(studentId: string) {
+  return db
+    .select()
+    .from(correctionRequests)
+    .where(eq(correctionRequests.studentId, studentId))
+    .orderBy(desc(correctionRequests.createdAt));
 }
 
-export async function getOpenCompany(companyId: string) {
-  const company = await db.query.companies.findFirst({
-    where: and(eq(companies.id, companyId), eq(companies.status, "APPROVED")),
-    with: {
-      jobPostings: {
-        where: eq(jobPostings.status, "APPROVED"),
-        orderBy: desc(jobPostings.createdAt),
-      },
-    },
+// Drives a student could apply to right now: open, before the deadline, from an
+// approved company. The deadline is compared with the database clock.
+const openDriveFilter = and(
+  eq(drives.status, "OPEN"),
+  gt(drives.deadline, sql`now()`),
+  inArray(
+    drives.companyId,
+    db.select({ id: companies.id }).from(companies).where(eq(companies.status, "APPROVED"))
+  )
+);
+
+async function getOpenDrives() {
+  return db.query.drives.findMany({
+    where: openDriveFilter,
+    orderBy: asc(drives.deadline),
+    with: { company: { columns: { id: true, name: true, logoUrl: true, website: true } }, criteria: true },
   });
-  return company ?? null;
+}
+
+// Students only ever see drives they are eligible for (PRD), so filtering happens here.
+export async function getEligibleDrives(student: Student) {
+  const open = await getOpenDrives();
+  return open.filter((drive) => eligibilityIssues(student, drive.criteria).length === 0);
+}
+
+// The drive if it's open and the student is eligible, otherwise null.
+export async function getApplyableDrive(student: Student, driveId: string) {
+  const drive = await db.query.drives.findFirst({
+    where: and(eq(drives.id, driveId), openDriveFilter),
+    with: { company: true, criteria: true },
+  });
+  if (!drive || eligibilityIssues(student, drive.criteria).length > 0) return null;
+  return drive;
 }
 
 export async function getStudentApplications(studentId: string) {
   return db.query.applications.findMany({
     where: eq(applications.studentId, studentId),
     orderBy: desc(applications.appliedAt),
-    with: { job: { with: { company: true } } },
+    with: {
+      drive: {
+        columns: { id: true, title: true, deadline: true, status: true, location: true },
+        with: { company: { columns: { name: true } } },
+      },
+      resume: { columns: { id: true, fileName: true } },
+    },
   });
 }
 
-export async function getApplyableJob(jobId: string) {
-  const [row] = await db
-    .select({ job: jobPostings })
-    .from(jobPostings)
-    .innerJoin(companies, eq(jobPostings.companyId, companies.id))
-    .where(
-      and(
-        eq(jobPostings.id, jobId),
-        eq(jobPostings.status, "APPROVED"),
-        eq(companies.status, "APPROVED")
-      )
-    );
-  return row?.job ?? null;
+export async function getApplication(studentId: string, driveId: string) {
+  const [application] = await db
+    .select()
+    .from(applications)
+    .where(and(eq(applications.studentId, studentId), eq(applications.driveId, driveId)));
+  return application ?? null;
 }
