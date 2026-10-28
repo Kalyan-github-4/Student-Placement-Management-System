@@ -16,7 +16,7 @@ const banners = {
     icon: CheckCircle2,
     tone: "border-emerald-300 bg-emerald-50 text-emerald-900",
     title: "Your company is approved",
-    body: "You can recruit through the placement cell. Drive posting opens in the next release.",
+    body: "You can post drives. The placement cell approves each drive before eligible students see it.",
   },
   REJECTED: {
     icon: XCircle,

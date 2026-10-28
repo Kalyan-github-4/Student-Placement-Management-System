@@ -85,6 +85,26 @@ export default async function CompanyReviewPage({
             </dl>
           </section>
 
+          {company.authLetters.length > 0 && (
+            <section className="rounded-2xl border border-[#D9E4F2] bg-white p-5 sm:p-6">
+              <h2 className="text-lg font-semibold text-[#152C50]">Authorization letter</h2>
+              <ul className="mt-2 grid gap-1">
+                {company.authLetters.map((doc) => (
+                  <li key={doc.id}>
+                    <a
+                      href={`/files/${doc.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium text-[#174A91] hover:underline"
+                    >
+                      {doc.fileName}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <section className="rounded-2xl border border-[#D9E4F2] bg-white p-5 sm:p-6">
             <h2 className="text-lg font-semibold text-[#152C50]">Recruiters</h2>
             <ul className="mt-3 divide-y divide-[#D9E4F2]">
