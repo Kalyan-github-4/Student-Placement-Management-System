@@ -14,7 +14,11 @@ export const portalPaths: Record<Role, string> = {
   RECRUITER: "/company",
 };
 
-// Super Admin can also work in the TPO portal, to review and act on placement data.
-export function canOpenPortal(role: Role, portalRole: Role) {
-  return role === portalRole || (role === "SUPER_ADMIN" && portalRole === "TPO");
+// Roles that can review and act on placement data (students, companies, drives).
+export const placementRoles: Role[] = ["TPO", "SUPER_ADMIN"];
+
+// The placement cell pages are shared: TPOs use them under /tpo, and Super Admin under
+// /admin so they never leave their own portal. Links inside the pages start from this.
+export function placementBase(role: Role) {
+  return role === "SUPER_ADMIN" ? "/admin" : "/tpo";
 }

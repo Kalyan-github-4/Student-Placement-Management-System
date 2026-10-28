@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { formatDateTime, StatusPill } from "@/components/portal/status-pill";
 import { requireRole } from "@/lib/dal";
+import { placementBase, placementRoles } from "@/lib/roles";
 import { getCompanyForReview, getEntityHistory } from "@/lib/data/tpo";
 import { ReviewActions } from "./review-actions";
 
@@ -18,7 +19,7 @@ const actionLabels: Record<string, string> = {
 export default async function CompanyReviewPage({
   params,
 }: PageProps<"/tpo/companies/[companyId]">) {
-  await requireRole("TPO", "SUPER_ADMIN");
+  const base = placementBase((await requireRole(...placementRoles)).role);
   const { companyId } = await params;
   const [company, history] = await Promise.all([
     getCompanyForReview(companyId),
@@ -44,7 +45,7 @@ export default async function CompanyReviewPage({
   return (
     <div className="grid gap-6">
       <Link
-        href="/tpo/companies"
+        href={`${base}/companies`}
         className="flex w-fit items-center gap-1 text-sm font-semibold text-[#174A91] hover:underline"
       >
         <ArrowLeft className="h-4 w-4" /> All companies

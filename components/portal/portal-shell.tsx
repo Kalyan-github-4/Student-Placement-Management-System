@@ -35,7 +35,8 @@ export function PortalShell({
         {nav && <PortalNav items={nav} />}
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-10 sm:py-10">
+      {/* Each page, and the skeleton before it, fades in as it mounts. */}
+      <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-10 sm:py-10 [&>*]:animate-in [&>*]:fade-in [&>*]:slide-in-from-bottom-1 [&>*]:duration-300 motion-reduce:[&>*]:animate-none">
         <Suspense fallback={<p className="text-[#526987]">Loading…</p>}>{children}</Suspense>
       </main>
     </div>

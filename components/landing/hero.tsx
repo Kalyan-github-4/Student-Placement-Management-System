@@ -1,86 +1,51 @@
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ArrowDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { SignInButton } from "@/components/landing/sign-in-dialog";
+import { HeroVideo } from "@/components/landing/hero-video";
 
+// Pinned full-screen video; the rest of the page scrolls up over it.
 export function Hero() {
   return (
     <section
       id="home"
-      className="relative isolate overflow-hidden bg-[#082B63] text-white"
+      className="sticky top-0 z-0 h-svh w-full overflow-hidden bg-[#082B63] text-white"
     >
+      <HeroVideo src="/videos/campus.mp4" poster="/bwu-campus-wide.webp" />
       <div
-        className="absolute inset-0 -z-10"
+        className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(60% 70% at 85% 20%, rgba(23,74,145,0.9) 0%, rgba(8,43,99,0) 70%), radial-gradient(40% 50% at 0% 100%, rgba(241,45,50,0.18) 0%, rgba(8,43,99,0) 70%)",
-        }}
-        aria-hidden="true"
-      />
-      <div
-        className="absolute inset-0 -z-10 opacity-[0.07]"
-        style={{
-          backgroundImage:
-            "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
-          backgroundSize: "56px 56px",
+            "linear-gradient(180deg, rgba(8,43,99,0.6) 0%, rgba(0,0,0,0.3) 45%, rgba(8,43,99,0.75) 100%)",
         }}
         aria-hidden="true"
       />
 
-      <div className="mx-auto grid max-w-7xl items-center gap-14 px-6 pt-32 pb-20 sm:px-10 sm:pt-36 lg:min-h-[min(100svh,56rem)] lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pt-28 lg:pb-24">
-        <div>
-          <h1 className="mt-6 text-4xl leading-[1.08] font-extrabold tracking-tight text-balance sm:text-5xl lg:text-6xl">
-            Student Placement Management{" "}
-            <span className="text-[#F12D32]">System</span>
-          </h1>
+      <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center sm:px-10">
+        <h1 className="drop-shadow-[0_2px_12px_rgba(0,0,0,0.55)]">
+          <span className="block text-[15vw] leading-none font-extrabold tracking-[0.04em] whitespace-nowrap text-transparent uppercase [-webkit-text-stroke:2px_#fff] sm:text-8xl lg:text-9xl xl:text-[9.5rem] lg:[-webkit-text-stroke:3px_#fff]">
+            Brainware
+          </span>
+          <span className="mt-[0.08em] block text-[10vw] leading-none font-bold tracking-[0.04em] whitespace-nowrap text-transparent [-webkit-text-stroke:2px_#F12D32] sm:text-6xl lg:text-7xl xl:text-8xl lg:[-webkit-text-stroke:3px_#F12D32]">
+            University
+          </span>
+        </h1>
 
-          <p className="mt-6 max-w-xl text-base leading-relaxed text-white/85 sm:text-lg">
-            One platform for Brainware University students, recruiting companies
-            and the placement cell to manage job postings, applications and
-            placement records.
-          </p>
+        <p className="mt-6 max-w-[90vw] text-lg leading-snug text-white [text-shadow:0_2px_18px_rgba(0,0,0,0.6)] sm:text-xl lg:text-2xl">
+          Where curious minds grow into confident leaders.
+        </p>
 
-          <div className="mt-9 flex flex-col gap-4 sm:flex-row sm:items-center">
-            <SignInButton className="inline-flex h-13 items-center justify-center gap-2 rounded-full bg-[#F12D32] px-7 text-base font-semibold text-white shadow-lg shadow-black/25 transition hover:bg-[#d4262b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-              Sign In
-              <ArrowRight className="h-5 w-5" />
-            </SignInButton>
-
-            <Link
-              href="#features"
-              className="inline-flex h-13 items-center justify-center gap-2 rounded-full border border-white/60 px-7 text-base font-semibold text-white transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-            >
-              Explore features
-              <ArrowDown className="h-5 w-5" />
-            </Link>
-          </div>
-        </div>
-
-        <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
-          <div
-            className="absolute -top-4 -right-4 h-full w-full rounded-3xl bg-[#F12D32]"
-            aria-hidden="true"
-          />
-          <div className="relative overflow-hidden rounded-3xl ring-1 ring-white/20">
-            <Image
-              src="/bwu-campus-wide.webp"
-              alt="Brainware University campus"
-              width={560}
-              height={373}
-              preload
-              sizes="(min-width: 1024px) 560px, 100vw"
-              className="h-auto w-full object-cover"
-            />
-          </div>
-          <div className="absolute -bottom-6 -left-3 rounded-2xl bg-white px-5 py-3 shadow-xl shadow-black/25 sm:-left-6">
-            <p className="font-[family-name:var(--font-script)] text-xl leading-tight text-[#174A91] sm:text-2xl">
-              Better placements,
-              <br />
-              brighter futures
-            </p>
-          </div>
-        </div>
+        <SignInButton className="mt-8 inline-flex h-12 cursor-pointer items-center justify-center rounded-full border-[3px] border-transparent px-8 text-base font-semibold text-[#082B63] animated-ring transition-transform duration-200 hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white lg:text-lg">
+          Sign In
+        </SignInButton>
       </div>
+
+      <Link
+        href="#about"
+        aria-label="Scroll to about section"
+        className="absolute bottom-[5%] left-1/2 z-10 -translate-x-1/2 animate-bounce rounded-full p-2 text-white focus-visible:outline-2 focus-visible:outline-white"
+      >
+        <ChevronDown className="h-6 w-6" />
+      </Link>
     </section>
   );
 }

@@ -128,3 +128,38 @@
     @apply font-sans;
   }
 }
+/* Gradient ring that spins around a pill button (landing hero Sign In). */
+@property --ring-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes ring-spin {
+  to {
+    --ring-angle: 360deg;
+  }
+}
+
+@layer components {
+  .animated-ring {
+    background:
+      linear-gradient(#fff, #fff) padding-box,
+      conic-gradient(
+          from var(--ring-angle),
+          #f12d32,
+          #174a91,
+          #082b63,
+          #174a91,
+          #f12d32
+        )
+        border-box;
+    animation: ring-spin 3s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animated-ring {
+      animation: none;
+    }
+  }
+}

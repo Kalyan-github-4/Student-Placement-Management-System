@@ -4,6 +4,7 @@ import { ArrowLeft, ExternalLink, FileText, Star } from "lucide-react";
 import { ActionButton, ReasonDialogButton } from "@/components/portal/action-buttons";
 import { formatDateTime } from "@/components/portal/status-pill";
 import { requireRole } from "@/lib/dal";
+import { placementBase, placementRoles } from "@/lib/roles";
 import { getEntityHistory, getStudentForReview } from "@/lib/data/tpo";
 import { academicFields, formatAcademicValue, missingProfileItems, type AcademicField } from "@/lib/student";
 import { rejectStudent, verifyStudent } from "../../student-actions";
@@ -17,7 +18,7 @@ const actionLabels: Record<string, string> = {
 };
 
 export default async function StudentReviewPage({ params }: PageProps<"/tpo/students/[studentId]">) {
-  await requireRole("TPO", "SUPER_ADMIN");
+  const base = placementBase((await requireRole(...placementRoles)).role);
   const { studentId } = await params;
   const [review, history] = await Promise.all([
     getStudentForReview(studentId),
@@ -36,7 +37,7 @@ export default async function StudentReviewPage({ params }: PageProps<"/tpo/stud
   return (
     <div className="grid gap-6">
       <Link
-        href="/tpo/students"
+        href={`${base}/students`}
         className="flex w-fit items-center gap-1 text-sm font-semibold text-[#174A91] hover:underline"
       >
         <ArrowLeft className="h-4 w-4" /> All students

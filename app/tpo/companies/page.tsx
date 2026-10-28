@@ -1,12 +1,13 @@
 import { FilterTabs, pickStatus } from "@/components/portal/filter-tabs";
 import { requireRole } from "@/lib/dal";
+import { placementBase, placementRoles } from "@/lib/roles";
 import { listCompanies, type CompanyStatus } from "@/lib/data/tpo";
 import { CompanyTable } from "./company-table";
 
 const statuses = ["PENDING", "APPROVED", "REJECTED", "SUSPENDED"] as const;
 
 export default async function TpoCompaniesPage({ searchParams }: PageProps<"/tpo/companies">) {
-  await requireRole("TPO", "SUPER_ADMIN");
+  const base = placementBase((await requireRole(...placementRoles)).role);
   const status = pickStatus<CompanyStatus>((await searchParams).status, statuses);
   const companies = await listCompanies(status);
 
@@ -18,7 +19,7 @@ export default async function TpoCompaniesPage({ searchParams }: PageProps<"/tpo
       </div>
 
       <FilterTabs
-        basePath="/tpo/companies"
+        basePath={`${base}/companies`}
         active={status}
         options={[
           { label: "All" },
@@ -30,7 +31,7 @@ export default async function TpoCompaniesPage({ searchParams }: PageProps<"/tpo
       />
 
       <section className="overflow-hidden rounded-2xl border border-[#D9E4F2] bg-white">
-        <CompanyTable companies={companies} />
+        <CompanyTable companies={companies} base={base} />
       </section>
     </div>
   );

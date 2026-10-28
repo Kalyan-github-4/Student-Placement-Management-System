@@ -5,8 +5,10 @@ import type { listCompanies } from "@/lib/data/tpo";
 
 export function CompanyTable({
   companies,
+  base,
 }: {
   companies: Awaited<ReturnType<typeof listCompanies>>;
+  base: string;
 }) {
   if (companies.length === 0) {
     return <p className="p-5 text-sm text-[#526987] sm:p-6">No companies here.</p>;
@@ -19,7 +21,7 @@ export function CompanyTable({
         return (
           <li key={company.id}>
             <Link
-              href={`/tpo/companies/${company.id}`}
+              href={`${base}/companies/${company.id}`}
               className="flex flex-col gap-2 p-5 transition hover:bg-[#F0F6FD] sm:flex-row sm:items-center sm:gap-4 sm:px-6"
             >
               <div className="min-w-0 flex-1">

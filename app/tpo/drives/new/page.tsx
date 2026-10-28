@@ -1,10 +1,11 @@
 import { DriveForm } from "@/components/drives/drive-form";
 import { requireRole } from "@/lib/dal";
+import { placementBase, placementRoles } from "@/lib/roles";
 import { getApprovedCompanies } from "@/lib/data/drives";
 import { saveTpoDrive } from "../../drive-actions";
 
 export default async function NewTpoDrivePage() {
-  await requireRole("TPO", "SUPER_ADMIN");
+  const base = placementBase((await requireRole(...placementRoles)).role);
   const companies = await getApprovedCompanies();
 
   return (
@@ -19,7 +20,7 @@ export default async function NewTpoDrivePage() {
         <DriveForm
           action={saveTpoDrive.bind(null, null)}
           companies={companies}
-          cancelHref="/tpo/drives"
+          cancelHref={`${base}/drives`}
           primaryLabel="Publish drive"
           secondaryLabel="Save as draft"
         />

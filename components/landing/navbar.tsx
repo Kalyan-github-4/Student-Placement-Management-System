@@ -18,28 +18,36 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("home");
 
+  // The hero video is pinned (sticky), so it never scrolls out of view: stay
+  // transparent until the page sheet has covered it, and pick the active link
+  // from the last section whose top has passed the middle of the screen.
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
+    const onScroll = () => {
+      setScrolled(window.scrollY > window.innerHeight - 72);
+      let current = navLinks[0].id;
+      for (const link of navLinks.slice(1)) {
+        const section = document.getElementById(link.id);
+        if (section && section.getBoundingClientRect().top <= window.innerHeight * 0.45) {
+          current = link.id;
+        }
+      }
+      setActive(current);
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, []);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) setActive(entry.target.id);
-        }
-      },
-      { rootMargin: "-45% 0px -50% 0px" }
-    );
-    for (const link of navLinks) {
-      const section = document.getElementById(link.id);
-      if (section) observer.observe(section);
-    }
-    return () => observer.disconnect();
-  }, []);
+  // "#home" doesn't scroll anywhere while the pinned hero is stuck in place.
+  const goHome = (event: React.MouseEvent) => {
+    event.preventDefault();
+    setOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const solid = scrolled || open;
 
@@ -53,7 +61,7 @@ export function Navbar() {
       )}
     >
       <div className="mx-auto flex h-18 max-w-7xl items-center justify-between gap-4 px-6 sm:px-10">
-        <Link href="#home" className="flex items-center gap-3">
+        <Link href="#home" onClick={goHome} className="flex items-center gap-3">
           <span
             className={cn(
               "text-base leading-tight font-extrabold tracking-wide uppercase sm:text-lg",
@@ -77,9 +85,9 @@ export function Navbar() {
               solid ? "text-[#526987]" : "text-white/85"
             )}
           >
-            Student Placement
+            Where futures
             <br />
-            Management System
+            take shape
           </span>
         </Link>
 
@@ -88,6 +96,7 @@ export function Navbar() {
             <Link
               key={link.id}
               href={`#${link.id}`}
+              onClick={link.id === "home" ? goHome : undefined}
               aria-current={active === link.id ? "true" : undefined}
               className={cn(
                 "relative py-1.5 transition-colors after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-[#F12D32] after:transition-transform",
@@ -142,7 +151,7 @@ export function Navbar() {
             <Link
               key={link.id}
               href={`#${link.id}`}
-              onClick={() => setOpen(false)}
+              onClick={link.id === "home" ? goHome : () => setOpen(false)}
               className={cn(
                 "py-2.5",
                 active === link.id ? "text-[#F12D32]" : "text-[#152C50]"

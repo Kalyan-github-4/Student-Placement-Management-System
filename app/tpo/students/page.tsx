@@ -2,13 +2,14 @@ import Link from "next/link";
 import { formatDate } from "@/app/student/status-badge";
 import { FilterTabs, pickStatus } from "@/components/portal/filter-tabs";
 import { requireRole } from "@/lib/dal";
+import { placementBase, placementRoles } from "@/lib/roles";
 import { listStudents, type VerificationStatus } from "@/lib/data/tpo";
 import { VerificationPill } from "./verification-pill";
 
 const statuses = ["DRAFT", "SUBMITTED", "VERIFIED", "REJECTED"] as const;
 
 export default async function TpoStudentsPage({ searchParams }: PageProps<"/tpo/students">) {
-  await requireRole("TPO", "SUPER_ADMIN");
+  const base = placementBase((await requireRole(...placementRoles)).role);
   const status = pickStatus<VerificationStatus>((await searchParams).status, statuses);
   const students = await listStudents(status);
 
@@ -23,7 +24,7 @@ export default async function TpoStudentsPage({ searchParams }: PageProps<"/tpo/
       </div>
 
       <FilterTabs
-        basePath="/tpo/students"
+        basePath={`${base}/students`}
         active={status}
         options={[
           { label: "All" },
@@ -42,7 +43,7 @@ export default async function TpoStudentsPage({ searchParams }: PageProps<"/tpo/
             {students.map((student) => (
               <li key={student.id}>
                 <Link
-                  href={`/tpo/students/${student.id}`}
+                  href={`${base}/students/${student.id}`}
                   className="flex flex-col gap-2 p-5 transition hover:bg-[#F0F6FD] sm:flex-row sm:items-center sm:gap-4 sm:px-6"
                 >
                   <div className="min-w-0 flex-1">

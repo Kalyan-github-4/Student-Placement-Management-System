@@ -6,11 +6,12 @@ import { DriveDetails } from "@/components/drives/drive-details";
 import { DriveStatusPill } from "@/components/drives/drive-status";
 import { ActionButton, ReasonDialogButton } from "@/components/portal/action-buttons";
 import { requireRole } from "@/lib/dal";
+import { placementBase, placementRoles } from "@/lib/roles";
 import { getApplicants, getDrive } from "@/lib/data/drives";
 import { changeDriveStatus } from "../../drive-actions";
 
 export default async function TpoDrivePage({ params }: PageProps<"/tpo/drives/[driveId]">) {
-  await requireRole("TPO", "SUPER_ADMIN");
+  const base = placementBase((await requireRole(...placementRoles)).role);
   const { driveId } = await params;
   const [drive, applicants] = await Promise.all([getDrive(driveId), getApplicants(driveId)]);
   if (!drive) notFound();
@@ -21,7 +22,7 @@ export default async function TpoDrivePage({ params }: PageProps<"/tpo/drives/[d
   return (
     <div className="grid gap-6">
       <Link
-        href="/tpo/drives"
+        href={`${base}/drives`}
         className="flex w-fit items-center gap-1 text-sm font-semibold text-[#174A91] hover:underline"
       >
         <ArrowLeft className="h-4 w-4" /> All drives
@@ -34,7 +35,7 @@ export default async function TpoDrivePage({ params }: PageProps<"/tpo/drives/[d
             <DriveStatusPill status={drive.status} deadlinePassed={drive.deadlinePassed} />
           </div>
           <p className="mt-1 text-[#526987]">
-            <Link href={`/tpo/companies/${drive.companyId}`} className="hover:text-[#174A91] hover:underline">
+            <Link href={`${base}/companies/${drive.companyId}`} className="hover:text-[#174A91] hover:underline">
               {drive.company.name}
             </Link>
           </p>
@@ -42,7 +43,7 @@ export default async function TpoDrivePage({ params }: PageProps<"/tpo/drives/[d
         <div className="flex flex-wrap gap-2">
           {drive.status !== "COMPLETED" && (
             <Link
-              href={`/tpo/drives/${drive.id}/edit`}
+              href={`${base}/drives/${drive.id}/edit`}
               className="flex h-10 items-center gap-1.5 rounded-lg border border-[#D9E4F2] bg-white px-4 text-sm font-semibold text-[#174A91] transition hover:border-[#174A91] hover:bg-[#F0F6FD]"
             >
               <Pencil className="h-4 w-4" /> Edit
@@ -88,7 +89,7 @@ export default async function TpoDrivePage({ params }: PageProps<"/tpo/drives/[d
 
       <DriveDetails drive={drive} />
 
-      <ApplicantsTable applicants={applicants} csvHref={`/tpo/drives/${drive.id}/applicants`} showPhone />
+      <ApplicantsTable applicants={applicants} csvHref={`${base}/drives/${drive.id}/applicants`} showPhone />
     </div>
   );
 }

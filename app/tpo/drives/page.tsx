@@ -3,12 +3,13 @@ import { Plus } from "lucide-react";
 import { DriveList } from "@/components/drives/drive-list";
 import { FilterTabs, pickStatus } from "@/components/portal/filter-tabs";
 import { requireRole } from "@/lib/dal";
+import { placementBase, placementRoles } from "@/lib/roles";
 import { listDrives, type DriveStatus } from "@/lib/data/drives";
 
 const statuses = ["DRAFT", "PENDING_APPROVAL", "OPEN", "CLOSED", "COMPLETED"] as const;
 
 export default async function TpoDrivesPage({ searchParams }: PageProps<"/tpo/drives">) {
-  await requireRole("TPO", "SUPER_ADMIN");
+  const base = placementBase((await requireRole(...placementRoles)).role);
   const status = pickStatus<DriveStatus>((await searchParams).status, statuses);
   const drives = await listDrives({ status });
 
@@ -22,7 +23,7 @@ export default async function TpoDrivesPage({ searchParams }: PageProps<"/tpo/dr
           </p>
         </div>
         <Link
-          href="/tpo/drives/new"
+          href={`${base}/drives/new`}
           className="flex items-center gap-1.5 rounded-lg bg-[#174A91] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#082B63]"
         >
           <Plus className="h-4 w-4" /> New drive
@@ -30,7 +31,7 @@ export default async function TpoDrivesPage({ searchParams }: PageProps<"/tpo/dr
       </div>
 
       <FilterTabs
-        basePath="/tpo/drives"
+        basePath={`${base}/drives`}
         active={status}
         options={[
           { label: "All" },
@@ -43,7 +44,7 @@ export default async function TpoDrivesPage({ searchParams }: PageProps<"/tpo/dr
       />
 
       <section className="overflow-hidden rounded-2xl border border-[#D9E4F2] bg-white">
-        <DriveList drives={drives} hrefBase="/tpo/drives" showCompany />
+        <DriveList drives={drives} hrefBase={`${base}/drives`} showCompany />
       </section>
     </div>
   );

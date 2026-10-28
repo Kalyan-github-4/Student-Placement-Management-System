@@ -2,12 +2,13 @@ import Link from "next/link";
 import { ReasonDialogButton } from "@/components/portal/action-buttons";
 import { formatDateTime } from "@/components/portal/status-pill";
 import { requireRole } from "@/lib/dal";
+import { placementBase, placementRoles } from "@/lib/roles";
 import { listPendingCorrections } from "@/lib/data/tpo";
 import { academicFields, formatAcademicValue, type AcademicField } from "@/lib/student";
 import { decideCorrection } from "../student-actions";
 
 export default async function CorrectionsPage() {
-  await requireRole("TPO", "SUPER_ADMIN");
+  const base = placementBase((await requireRole(...placementRoles)).role);
   const requests = await listPendingCorrections();
 
   return (
@@ -33,7 +34,7 @@ export default async function CorrectionsPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <Link
-                      href={`/tpo/students/${request.studentId}`}
+                      href={`${base}/students/${request.studentId}`}
                       className="font-semibold text-[#152C50] hover:text-[#174A91]"
                     >
                       {studentName}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Briefcase, Building2, ClipboardCheck, FilePen, GraduationCap, UserCheck } from "lucide-react";
 import { requireRole } from "@/lib/dal";
+import { placementBase, placementRoles } from "@/lib/roles";
 import { countDrivesByStatus } from "@/lib/data/drives";
 import {
   getCompanyCounts,
@@ -11,7 +12,8 @@ import {
 import { CompanyTable } from "./companies/company-table";
 
 export default async function TpoOverview() {
-  const user = await requireRole("TPO", "SUPER_ADMIN");
+  const user = await requireRole(...placementRoles);
+  const base = placementBase(user.role);
   const [companyCounts, studentCounts, corrections, pendingDrives, openDrives, pending] =
     await Promise.all([
       getCompanyCounts(),
@@ -24,15 +26,15 @@ export default async function TpoOverview() {
 
   // The first row is the TPO's to-do list; the second is the state of the season.
   const todo = [
-    { label: "Profiles to verify", value: studentCounts.SUBMITTED, icon: UserCheck, href: "/tpo/students?status=SUBMITTED" },
-    { label: "Correction requests", value: corrections.length, icon: FilePen, href: "/tpo/corrections" },
-    { label: "Companies to review", value: companyCounts.PENDING, icon: Building2, href: "/tpo/companies?status=PENDING" },
-    { label: "Drives to approve", value: pendingDrives, icon: ClipboardCheck, href: "/tpo/drives?status=PENDING_APPROVAL" },
+    { label: "Profiles to verify", value: studentCounts.SUBMITTED, icon: UserCheck, href: `${base}/students?status=SUBMITTED` },
+    { label: "Correction requests", value: corrections.length, icon: FilePen, href: `${base}/corrections` },
+    { label: "Companies to review", value: companyCounts.PENDING, icon: Building2, href: `${base}/companies?status=PENDING` },
+    { label: "Drives to approve", value: pendingDrives, icon: ClipboardCheck, href: `${base}/drives?status=PENDING_APPROVAL` },
   ];
   const season = [
-    { label: "Verified students", value: studentCounts.VERIFIED, icon: GraduationCap, href: "/tpo/students?status=VERIFIED" },
-    { label: "Approved companies", value: companyCounts.APPROVED, icon: Building2, href: "/tpo/companies?status=APPROVED" },
-    { label: "Open drives", value: openDrives, icon: Briefcase, href: "/tpo/drives?status=OPEN" },
+    { label: "Verified students", value: studentCounts.VERIFIED, icon: GraduationCap, href: `${base}/students?status=VERIFIED` },
+    { label: "Approved companies", value: companyCounts.APPROVED, icon: Building2, href: `${base}/companies?status=APPROVED` },
+    { label: "Open drives", value: openDrives, icon: Briefcase, href: `${base}/drives?status=OPEN` },
   ];
 
   const tile = (stat: (typeof todo)[number], highlight: boolean) => (
@@ -56,16 +58,6 @@ export default async function TpoOverview() {
         <p className="mt-1 text-[#526987]">Signed in as {user.email}</p>
       </div>
 
-      {user.role === "SUPER_ADMIN" && (
-        <p className="rounded-2xl border border-[#D9E4F2] bg-white p-4 text-sm text-[#526987] sm:px-6">
-          You&apos;re in the placement cell portal as Super Admin. Your decisions here are recorded
-          in the audit log under your account.{" "}
-          <Link href="/admin" className="font-semibold text-[#174A91] hover:underline">
-            Back to Super Admin
-          </Link>
-        </p>
-      )}
-
       <section className="grid gap-3">
         <h2 className="text-sm font-semibold tracking-wide text-[#526987] uppercase">Needs your attention</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{todo.map((s) => tile(s, true))}</div>
@@ -80,13 +72,13 @@ export default async function TpoOverview() {
         <div className="flex items-center justify-between gap-4 border-b border-[#D9E4F2] p-5 sm:px-6">
           <h2 className="text-lg font-semibold text-[#152C50]">Companies awaiting review</h2>
           <Link
-            href="/tpo/companies"
+            href={`${base}/companies`}
             className="flex items-center gap-1 text-sm font-semibold text-[#174A91] hover:underline"
           >
             All companies <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        <CompanyTable companies={pending} />
+        <CompanyTable companies={pending} base={base} />
       </section>
     </div>
   );

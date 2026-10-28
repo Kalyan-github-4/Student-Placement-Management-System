@@ -8,6 +8,7 @@ import { db } from "@/db";
 import { companies, companyUsers, drives, users } from "@/db/schema";
 import { auditInsert } from "@/lib/audit";
 import { requireRole } from "@/lib/dal";
+import { placementBase, placementRoles } from "@/lib/roles";
 import { getDrive, notifyEligibleStudents, saveDrive, type DriveStatus } from "@/lib/data/drives";
 import { driveFormInput, driveSchema } from "@/lib/drives";
 import { sendDriveDecisionEmail } from "@/lib/emails";
@@ -20,7 +21,7 @@ export async function saveTpoDrive(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const tpo = await requireRole("TPO", "SUPER_ADMIN");
+  const tpo = await requireRole(...placementRoles);
   const { input, values } = driveFormInput(formData);
   const parsed = driveSchema.safeParse(input);
   if (!parsed.success) return { errors: fieldErrors(parsed.error), values };
@@ -66,7 +67,7 @@ export async function saveTpoDrive(
   });
 
   if (opening) notifyEligibleStudents(id);
-  redirect(`/tpo/drives/${id}`);
+  redirect(`${placementBase(tpo.role)}/drives/${id}`);
 }
 
 const reasonSchema = z.string().trim().min(5, "Give a reason the company can act on.").max(500);
@@ -96,7 +97,7 @@ export async function changeDriveStatus(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const tpo = await requireRole("TPO", "SUPER_ADMIN");
+  const tpo = await requireRole(...placementRoles);
   const drive = await getDrive(driveId);
   if (!drive) return { message: "Drive not found." };
   const { from, to, action } = transitions[transition];

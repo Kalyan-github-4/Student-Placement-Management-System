@@ -1,5 +1,6 @@
 import { formatDateTime } from "@/components/portal/status-pill";
 import { requireRole } from "@/lib/dal";
+import { placementRoles } from "@/lib/roles";
 import { listInvites } from "@/lib/data/tpo";
 import { InviteForm } from "./invite-form";
 
@@ -10,7 +11,7 @@ function inviteState(invite: { acceptedAt: Date | null; expired: boolean }) {
 }
 
 export default async function InviteCompanyPage() {
-  await requireRole("TPO", "SUPER_ADMIN");
+  await requireRole(...placementRoles);
   const invites = await listInvites();
 
   return (

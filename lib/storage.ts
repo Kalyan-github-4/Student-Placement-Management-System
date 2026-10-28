@@ -69,21 +69,29 @@ export async function storeFile(
 
   const isImage = kind === "LOGO";
   const extension = rule.types[mimeType];
-  const result = await new Promise<UploadApiResponse>((resolve, reject) => {
-    cloudinary.uploader
-      .upload_stream(
-        {
-          folder: `placement/${kind.toLowerCase()}`,
-          // Raw files keep their extension in the public id.
-          public_id: isImage ? createId() : `${createId()}.${extension}`,
-          resource_type: isImage ? "image" : "raw",
-          type: isImage ? "upload" : "private",
-          overwrite: false,
-        },
-        (error, response) => (error || !response ? reject(error) : resolve(response))
-      )
-      .end(bytes);
-  });
+  let result: UploadApiResponse;
+  try {
+    result = await new Promise<UploadApiResponse>((resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream(
+          {
+            folder: `placement/${kind.toLowerCase()}`,
+            // Raw files keep their extension in the public id.
+            public_id: isImage ? createId() : `${createId()}.${extension}`,
+            resource_type: isImage ? "image" : "raw",
+            type: isImage ? "upload" : "private",
+            overwrite: false,
+          },
+          (error, response) => (error || !response ? reject(error) : resolve(response))
+        )
+        .end(bytes);
+    });
+  } catch (error) {
+    // Provider problems (bad credentials, missing permissions, outages) aren't the
+    // user's to fix, so log the detail and show a plain message instead of crashing.
+    console.error("[storage] Upload failed", error);
+    return { error: "The upload failed on our side. Please try again later or contact the placement cell." };
+  }
 
   return {
     file: {

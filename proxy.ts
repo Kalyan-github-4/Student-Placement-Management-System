@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { canOpenPortal, portalPaths, type Role } from "@/lib/roles";
+import { portalPaths, type Role } from "@/lib/roles";
 
 const portalRoles = Object.entries(portalPaths) as [Role, string][];
 
@@ -15,7 +15,7 @@ export const proxy = auth((req) => {
   if (!role || !(role in portalPaths)) {
     return NextResponse.redirect(new URL("/login", req.nextUrl));
   }
-  if (!canOpenPortal(role as Role, portal[0])) {
+  if (role !== portal[0]) {
     return NextResponse.redirect(new URL(portalPaths[role], req.nextUrl));
   }
 });

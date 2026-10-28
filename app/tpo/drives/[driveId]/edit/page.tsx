@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 import { DriveForm } from "@/components/drives/drive-form";
 import { requireRole } from "@/lib/dal";
+import { placementBase, placementRoles } from "@/lib/roles";
 import { getDrive } from "@/lib/data/drives";
 import { driveToFormValues } from "@/lib/drives";
 import { saveTpoDrive } from "../../../drive-actions";
 
 export default async function EditTpoDrivePage({ params }: PageProps<"/tpo/drives/[driveId]/edit">) {
-  await requireRole("TPO", "SUPER_ADMIN");
+  const base = placementBase((await requireRole(...placementRoles)).role);
   const { driveId } = await params;
   const drive = await getDrive(driveId);
   if (!drive || drive.status === "COMPLETED") notFound();
@@ -27,7 +28,7 @@ export default async function EditTpoDrivePage({ params }: PageProps<"/tpo/drive
         <DriveForm
           action={saveTpoDrive.bind(null, drive.id)}
           defaults={driveToFormValues(drive, drive.criteria)}
-          cancelHref={`/tpo/drives/${drive.id}`}
+          cancelHref={`${base}/drives/${drive.id}`}
           primaryLabel={isOpen ? "Save changes" : "Save and publish"}
           secondaryLabel={isOpen ? undefined : "Save as draft"}
         />

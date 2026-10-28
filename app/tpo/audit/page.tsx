@@ -2,13 +2,14 @@ import Link from "next/link";
 import { FilterTabs, pickStatus } from "@/components/portal/filter-tabs";
 import { formatDateTime } from "@/components/portal/status-pill";
 import { requireRole } from "@/lib/dal";
+import { placementBase, placementRoles } from "@/lib/roles";
 import { auditEntities, listAuditLogs, type AuditEntity } from "@/lib/data/tpo";
 
-// Where each kind of audited record can be opened.
+// Where each kind of audited record can be opened, under the portal's base path.
 const entityLinks: Partial<Record<string, string>> = {
-  company: "/tpo/companies/",
-  drive: "/tpo/drives/",
-  student: "/tpo/students/",
+  company: "/companies/",
+  drive: "/drives/",
+  student: "/students/",
 };
 
 // One line of what changed, e.g. "status: APPROVED · reason: …".
@@ -21,7 +22,7 @@ function summarize(after: unknown) {
 }
 
 export default async function AuditLogPage({ searchParams }: PageProps<"/tpo/audit">) {
-  await requireRole("TPO", "SUPER_ADMIN");
+  const base = placementBase((await requireRole(...placementRoles)).role);
   const entity = pickStatus<AuditEntity>((await searchParams).status, auditEntities);
   const entries = await listAuditLogs(entity);
 
@@ -36,7 +37,7 @@ export default async function AuditLogPage({ searchParams }: PageProps<"/tpo/aud
       </div>
 
       <FilterTabs
-        basePath="/tpo/audit"
+        basePath={`${base}/audit`}
         active={entity}
         options={[
           { label: "All" },
@@ -63,7 +64,7 @@ export default async function AuditLogPage({ searchParams }: PageProps<"/tpo/aud
                     <p className="font-semibold text-[#152C50]">
                       {entry.action}{" "}
                       {href ? (
-                        <Link href={`${href}${entry.entityId}`} className="text-sm font-medium text-[#174A91] hover:underline">
+                        <Link href={`${base}${href}${entry.entityId}`} className="text-sm font-medium text-[#174A91] hover:underline">
                           Open {entry.entity}
                         </Link>
                       ) : null}

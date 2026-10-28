@@ -8,6 +8,7 @@ import { companies, companyInvites, users } from "@/db/schema";
 import { auditInsert } from "@/lib/audit";
 import { isFreeEmail } from "@/lib/company";
 import { requireRole } from "@/lib/dal";
+import { placementRoles } from "@/lib/roles";
 import { getCompanyForReview, type CompanyStatus } from "@/lib/data/tpo";
 import {
   sendCompanyApprovedEmail,
@@ -40,7 +41,7 @@ export async function decideCompany(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const tpo = await requireRole("TPO", "SUPER_ADMIN");
+  const tpo = await requireRole(...placementRoles);
   const company = await getCompanyForReview(companyId);
   if (!company) return { message: "Company not found." };
 
@@ -113,7 +114,7 @@ const inviteSchema = z.object({
 const INVITE_LIFETIME_MS = 14 * 24 * 60 * 60 * 1000;
 
 export async function inviteCompany(_prev: FormState, formData: FormData): Promise<FormState> {
-  const tpo = await requireRole("TPO", "SUPER_ADMIN");
+  const tpo = await requireRole(...placementRoles);
   const values = formValues(formData);
   const parsed = inviteSchema.safeParse(values);
   if (!parsed.success) return { errors: fieldErrors(parsed.error), values };
