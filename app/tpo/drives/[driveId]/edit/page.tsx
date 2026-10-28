@@ -6,7 +6,7 @@ import { driveToFormValues } from "@/lib/drives";
 import { saveTpoDrive } from "../../../drive-actions";
 
 export default async function EditTpoDrivePage({ params }: PageProps<"/tpo/drives/[driveId]/edit">) {
-  await requireRole("TPO");
+  await requireRole("TPO", "SUPER_ADMIN");
   const { driveId } = await params;
   const drive = await getDrive(driveId);
   if (!drive || drive.status === "COMPLETED") notFound();

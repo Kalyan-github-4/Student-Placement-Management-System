@@ -7,6 +7,7 @@ const nav = [
   { href: "/tpo/companies", label: "Companies" },
   { href: "/tpo/drives", label: "Drives" },
   { href: "/tpo/invite", label: "Invite Company" },
+  { href: "/tpo/audit", label: "Audit Log" },
 ];
 
 export default function TpoLayout({ children }: LayoutProps<"/tpo">) {

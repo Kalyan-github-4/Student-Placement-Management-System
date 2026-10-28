@@ -20,7 +20,7 @@ export async function saveTpoDrive(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const tpo = await requireRole("TPO");
+  const tpo = await requireRole("TPO", "SUPER_ADMIN");
   const { input, values } = driveFormInput(formData);
   const parsed = driveSchema.safeParse(input);
   if (!parsed.success) return { errors: fieldErrors(parsed.error), values };
@@ -96,7 +96,7 @@ export async function changeDriveStatus(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const tpo = await requireRole("TPO");
+  const tpo = await requireRole("TPO", "SUPER_ADMIN");
   const drive = await getDrive(driveId);
   if (!drive) return { message: "Drive not found." };
   const { from, to, action } = transitions[transition];

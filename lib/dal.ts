@@ -20,10 +20,10 @@ export const getCurrentUser = cache(async () => {
   return user ?? null;
 });
 
-export async function requireRole(role: Role) {
+export async function requireRole(...roles: Role[]) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (user.status === "SUSPENDED") redirect("/login?error=suspended");
-  if (user.role !== role) redirect(portalPaths[user.role]);
+  if (!roles.includes(user.role)) redirect(portalPaths[user.role]);
   return user;
 }

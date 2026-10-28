@@ -17,7 +17,7 @@ const actionLabels: Record<string, string> = {
 };
 
 export default async function StudentReviewPage({ params }: PageProps<"/tpo/students/[studentId]">) {
-  await requireRole("TPO");
+  await requireRole("TPO", "SUPER_ADMIN");
   const { studentId } = await params;
   const [review, history] = await Promise.all([
     getStudentForReview(studentId),

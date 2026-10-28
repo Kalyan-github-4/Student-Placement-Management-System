@@ -4,7 +4,7 @@ import { getApprovedCompanies } from "@/lib/data/drives";
 import { saveTpoDrive } from "../../drive-actions";
 
 export default async function NewTpoDrivePage() {
-  await requireRole("TPO");
+  await requireRole("TPO", "SUPER_ADMIN");
   const companies = await getApprovedCompanies();
 
   return (

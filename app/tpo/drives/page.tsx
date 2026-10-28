@@ -8,7 +8,7 @@ import { listDrives, type DriveStatus } from "@/lib/data/drives";
 const statuses = ["DRAFT", "PENDING_APPROVAL", "OPEN", "CLOSED", "COMPLETED"] as const;
 
 export default async function TpoDrivesPage({ searchParams }: PageProps<"/tpo/drives">) {
-  await requireRole("TPO");
+  await requireRole("TPO", "SUPER_ADMIN");
   const status = pickStatus<DriveStatus>((await searchParams).status, statuses);
   const drives = await listDrives({ status });
 

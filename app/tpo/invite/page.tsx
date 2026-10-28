@@ -10,7 +10,7 @@ function inviteState(invite: { acceptedAt: Date | null; expired: boolean }) {
 }
 
 export default async function InviteCompanyPage() {
-  await requireRole("TPO");
+  await requireRole("TPO", "SUPER_ADMIN");
   const invites = await listInvites();
 
   return (

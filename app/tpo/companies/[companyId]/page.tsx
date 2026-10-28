@@ -18,7 +18,7 @@ const actionLabels: Record<string, string> = {
 export default async function CompanyReviewPage({
   params,
 }: PageProps<"/tpo/companies/[companyId]">) {
-  await requireRole("TPO");
+  await requireRole("TPO", "SUPER_ADMIN");
   const { companyId } = await params;
   const [company, history] = await Promise.all([
     getCompanyForReview(companyId),

@@ -23,7 +23,7 @@ const noteSchema = z
   .max(500, "Keep it under 500 characters.");
 
 export async function verifyStudent(studentId: string): Promise<FormState> {
-  const tpo = await requireRole("TPO");
+  const tpo = await requireRole("TPO", "SUPER_ADMIN");
   const review = await getStudentForReview(studentId);
   if (!review) return { message: "Student not found." };
   const { student } = review;
@@ -66,7 +66,7 @@ export async function rejectStudent(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const tpo = await requireRole("TPO");
+  const tpo = await requireRole("TPO", "SUPER_ADMIN");
   const parsed = noteSchema.safeParse(formData.get("reason"));
   if (!parsed.success) return { errors: { reason: parsed.error.issues[0].message } };
 
@@ -100,7 +100,7 @@ export async function decideCorrection(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const tpo = await requireRole("TPO");
+  const tpo = await requireRole("TPO", "SUPER_ADMIN");
   const note = String(formData.get("note") ?? "").trim().slice(0, 500) || null;
   if (!approve && !note) return { errors: { note: "Say why the request is declined." } };
 

@@ -40,7 +40,7 @@ export async function decideCompany(
   _prev: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const tpo = await requireRole("TPO");
+  const tpo = await requireRole("TPO", "SUPER_ADMIN");
   const company = await getCompanyForReview(companyId);
   if (!company) return { message: "Company not found." };
 
@@ -113,7 +113,7 @@ const inviteSchema = z.object({
 const INVITE_LIFETIME_MS = 14 * 24 * 60 * 60 * 1000;
 
 export async function inviteCompany(_prev: FormState, formData: FormData): Promise<FormState> {
-  const tpo = await requireRole("TPO");
+  const tpo = await requireRole("TPO", "SUPER_ADMIN");
   const values = formValues(formData);
   const parsed = inviteSchema.safeParse(values);
   if (!parsed.success) return { errors: fieldErrors(parsed.error), values };

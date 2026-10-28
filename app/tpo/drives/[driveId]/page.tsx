@@ -10,7 +10,7 @@ import { getApplicants, getDrive } from "@/lib/data/drives";
 import { changeDriveStatus } from "../../drive-actions";
 
 export default async function TpoDrivePage({ params }: PageProps<"/tpo/drives/[driveId]">) {
-  await requireRole("TPO");
+  await requireRole("TPO", "SUPER_ADMIN");
   const { driveId } = await params;
   const [drive, applicants] = await Promise.all([getDrive(driveId), getApplicants(driveId)]);
   if (!drive) notFound();

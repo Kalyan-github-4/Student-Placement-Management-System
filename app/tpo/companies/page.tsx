@@ -6,7 +6,7 @@ import { CompanyTable } from "./company-table";
 const statuses = ["PENDING", "APPROVED", "REJECTED", "SUSPENDED"] as const;
 
 export default async function TpoCompaniesPage({ searchParams }: PageProps<"/tpo/companies">) {
-  await requireRole("TPO");
+  await requireRole("TPO", "SUPER_ADMIN");
   const status = pickStatus<CompanyStatus>((await searchParams).status, statuses);
   const companies = await listCompanies(status);
 

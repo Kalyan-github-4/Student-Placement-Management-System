@@ -7,7 +7,7 @@ import { academicFields, formatAcademicValue, type AcademicField } from "@/lib/s
 import { decideCorrection } from "../student-actions";
 
 export default async function CorrectionsPage() {
-  await requireRole("TPO");
+  await requireRole("TPO", "SUPER_ADMIN");
   const requests = await listPendingCorrections();
 
   return (

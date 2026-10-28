@@ -11,7 +11,7 @@ import {
 import { CompanyTable } from "./companies/company-table";
 
 export default async function TpoOverview() {
-  const user = await requireRole("TPO");
+  const user = await requireRole("TPO", "SUPER_ADMIN");
   const [companyCounts, studentCounts, corrections, pendingDrives, openDrives, pending] =
     await Promise.all([
       getCompanyCounts(),
@@ -55,6 +55,16 @@ export default async function TpoOverview() {
         <h1 className="text-2xl font-bold text-[#152C50]">Placement cell</h1>
         <p className="mt-1 text-[#526987]">Signed in as {user.email}</p>
       </div>
+
+      {user.role === "SUPER_ADMIN" && (
+        <p className="rounded-2xl border border-[#D9E4F2] bg-white p-4 text-sm text-[#526987] sm:px-6">
+          You&apos;re in the placement cell portal as Super Admin. Your decisions here are recorded
+          in the audit log under your account.{" "}
+          <Link href="/admin" className="font-semibold text-[#174A91] hover:underline">
+            Back to Super Admin
+          </Link>
+        </p>
+      )}
 
       <section className="grid gap-3">
         <h2 className="text-sm font-semibold tracking-wide text-[#526987] uppercase">Needs your attention</h2>

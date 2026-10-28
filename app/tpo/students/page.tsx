@@ -8,7 +8,7 @@ import { VerificationPill } from "./verification-pill";
 const statuses = ["DRAFT", "SUBMITTED", "VERIFIED", "REJECTED"] as const;
 
 export default async function TpoStudentsPage({ searchParams }: PageProps<"/tpo/students">) {
-  await requireRole("TPO");
+  await requireRole("TPO", "SUPER_ADMIN");
   const status = pickStatus<VerificationStatus>((await searchParams).status, statuses);
   const students = await listStudents(status);
 
