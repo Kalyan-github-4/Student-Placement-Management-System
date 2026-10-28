@@ -163,3 +163,25 @@ export async function listPendingCorrections() {
     .where(eq(correctionRequests.status, "PENDING"))
     .orderBy(correctionRequests.createdAt);
 }
+
+export const auditEntities = ["company", "drive", "student", "user", "company_invite"] as const;
+export type AuditEntity = (typeof auditEntities)[number];
+
+export async function listAuditLogs(entity?: AuditEntity) {
+  return db
+    .select({
+      id: auditLogs.id,
+      action: auditLogs.action,
+      entity: auditLogs.entity,
+      entityId: auditLogs.entityId,
+      after: auditLogs.after,
+      at: auditLogs.at,
+      actorEmail: users.email,
+      actorRole: users.role,
+    })
+    .from(auditLogs)
+    .leftJoin(users, eq(auditLogs.actorId, users.id))
+    .where(entity ? eq(auditLogs.entity, entity) : undefined)
+    .orderBy(desc(auditLogs.at))
+    .limit(300);
+}
